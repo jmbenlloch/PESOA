@@ -7,26 +7,36 @@ from ROOT import *
 log =logging.getLogger("Photon")
 log.setLevel(logging.INFO)
 log.addHandler(ch)
+deb = Debug(name="Photon",switch=0)
 
 class SPhoton:
-	def __init__(self,t0,x,y,z,tx,ty,tz,tau):
+	def __init__(self,t0,x,y,z,tx,ty,tz,tau,lamda,n,sigmaz=1*mm):
 		"""
 		A scintillation photon.
+		t0 = creation time stamp (time after initial interaction)
+		x,y,z:  position
+		tx,ty,tz: director cosines
+		tau: lifetime of scintillation process that created the photon
+		lamda: wavelength
+		n: refraction index to wavelength 
+		sigmaz: resolution in z coordinate (relevant for CTR)
 		"""
-		self.lamda = 172*nm  #photon is created as VUV photon
-		self.n = 1.55 #refraction index for VUV
+		self.lamda = lamda  #photon wavelenght
+		self.n = n #refraction index 
+		self.sigmaz = sigmaz
 		self.t0 = t0  #creation time wrt interaction time
 		self.time = self.t0  #phton timestamp initially set to t0
+		self.ctime = self.t0 #corrected timestamp
 		self.path = 0  #accumulated path
 		self.nb = 0  #number of bounces
 		self.x = x
 		self.y = y
 		self.z = z
-
 		self.tx = tx
 		self.ty = ty
 		self.tz = tz
 		self.tau = tau 
+		self.zr = self.z + rnd.gauss(0, self.sigmaz) # reconstructed z
 		
 	def X(self):
 		"""
@@ -45,6 +55,12 @@ class SPhoton:
 		z coordinate
 		"""
 		return self.z
+
+	def DOI(self):
+		"""
+		reconstructed z coordinate (depth of interaction)
+		"""
+		return self.zr
 
 	def XYZ(self):
 		"""
@@ -112,34 +128,109 @@ class SPhoton:
 		"""
 		return self.time
 
+	def CTime(self):
+		"""
+		accumulated time with respect to interaction time 
+		corrected by DOI
+		"""
+		return self.ctime
+
+	def N(self):
+		"""
+		refraction index
+		"""
+		return self.n
+
 	def __str__(self):
 
 		s= """
 	      Photon:
-	      x = %7.2f mm y = %7.2f mm z = %7.2f mm
+	      x = %7.2f mm y = %7.2f mm z = %7.2f mm 
 	      tx = %7.2f ty = %7.2f tz = %7.2f
 	      tau = %7.4g ns,t0 = %7.4g ns 
-	      time = %7.4g ns path = %7.4g mm, 
-	      Lambda = %7.2f
+	      time = %7.4g ns ctime = %7.4g ns path = %7.4g mm,  
+	      doi =%7.4g mm
+	      Lambda = %7.2f n = %7.2f
         
 			"""%(self.X()/mm, self.Y()/mm, self.Z()/mm,
 				self.TX(), self.TY(), self.TZ(), self.Tau()/ns,self.T0()/ns, 
-				self.Time()/ns, self.Path()/mm, self.Lambda()/nm )
+				self.Time()/ns, self.CTime()/ns, self.Path()/mm,
+				self.DOI()/mm, self.Lambda()/nm, self.N())
 
 		return s
 
 class PhotonTransport:
 	"""
-	Transports the photon to the next face in the box.
+	Transports the photon to the next face in the LXSC box.
 	The box is defined by six planes: 
 	plane 0 x =0, (x = lx, where lx is the length in x of the box )
 	plane 1 y =0, (y = ly, where ly is the length in y of the box )
 	plane 2 z =0, (z = lz, where lz is the length in z of the box )
 	"""
-	def __init__(self,box):
-		self.box = box
+	def __init__(self,lxsc,detEff=0.9,lxeReflectivity=0.95):
+		self.lxsc = lxsc
+		self.box = self.lxsc.Box()
+		self.imask = self.lxsc.instMask
+		
 
-	def  lambert(self,photon,jd):
+	def TestInstrumentedFace(self,fi):
+		"""
+		Tests whether the photon hits an instrumented face as specified
+		by the mask imask.
+		fi = 0 for x =0 or x=l; 1 for y=0 or y = l; 2 for z=0 or z= l
+		a mask [1,0,0] means that x is instrumented
+		a mask [1,1,1] means that x,y,z are instrumented
+		thus if instrumented imask[fi]=1
+		"""
+
+		return self.imask[fi]
+
+	def TestSensorEfficiency(self):
+		"""
+		Tests whether photon is detected by sensors
+		"""
+		test = rnd.uniform(0.,1.)
+
+		if test > self.lxsc.PLXSC().SensorEfficiency():
+			return False
+		else:
+			return True
+
+	def TestReflectivityUV(self):
+		"""
+		Tests whether UV photon reflects in the box wall or is absorbed 
+		"""
+		test = rnd.uniform(0.,1.)
+
+		if test > self.lxsc.PLXSC().ReflectivityUV():
+			return False
+		else:
+			return True 
+
+	def TestWLSEfficiency(self):
+		"""
+		Tests whether UV photon emits a WLS photon  
+		"""
+		test = rnd.uniform(0.,1.)
+
+		if test > self.lxsc.PLXSC().WLSEfficiency():
+			return False
+		else:
+			return True
+
+	def TestReflectivityWLS(self):
+		"""
+		Tests whether wls (blue) photon reflects in the box wall or is absorbed 
+		"""
+		test = rnd.uniform(0.,1.)
+
+		if test > self.lxsc.PLXSC().ReflectivityWLS():
+			return False
+		else:
+			return True 
+
+					
+	def Lambert(self,photon,jd):
 		"""
 		Lambertian reflection
 		changes the direction of the incoming cosinus
@@ -162,7 +253,7 @@ class PhotonTransport:
 			sys.exit()  
 
 
-	def step(self,photon):
+	def Step(self,photon):
 		"""
 		Steps to the closer face of the box.
 		the photon is defined by coordinates:
@@ -184,25 +275,30 @@ class PhotonTransport:
 		tx = photon.TX()
 		ty = photon.TY()
 		tz = photon.TZ()
+		path = photon.Path()
+		time = photon.Time()
 
 		lx = self.box.X()
 		ly = self.box.Y()
 		lz = self.box.Z()
-		
+		log.debug('+++step+++')
 		log.debug('x0 = %7.2f mm y0 = %7.2f mm z0 = %7.2f mm', x0/mm,y0/mm,z0/mm)
 		log.debug('tx = %7.2f ty = %7.2f tz = %7.2f', tx,ty,tz)
+		log.debug('path = %7.2f mm time = %7.2f ns ', path,time)
+		
+		deb.Wait()
 
 		D=[]
 		xx = -9999
 		yy = -9999
 		zz = -9999
 
-		if x0 == 0 or lx-x0 == 0:  #face x
-			return 0
-		if y0 == 0 or ly-y0 == 0:  #face y
-			return 1
-		if z0 == 0 or lz-z0 == 0:  #face z
-			return 2
+		# if x0 == 0 or lx-x0 == 0:  #face x
+		# 	return 0
+		# if y0 == 0 or ly-y0 == 0:  #face y
+		# 	return 1
+		# if z0 == 0 or lz-z0 == 0:  #face z
+		# 	return 2
 
 		if -x0/tx >0 :
 			D.append(-x0/tx)
@@ -229,9 +325,11 @@ class PhotonTransport:
 		if -z0/tz >0 :
 			D.append(-z0/tz)
 			zz = 0
+			doi = photon.DOI()
 		elif (lz-z0)/tz >0 :
 			D.append((lz-z0)/tz)
-			zz = ly
+			zz = lz
+			doi = lz - photon.DOI()
 		else:
 			log.error(' negative distance to plane z: -z0/tz (mm) = %7.2f (lz-z0)/tz (mm) = %7.2f', 
 				-(z0/tz)/mm,((lz-z0)/tz)/mm)
@@ -256,14 +354,17 @@ class PhotonTransport:
 			photon.y = y0 + d*ty
 			photon.z = zz
 
+		photon.path = path + d 
+		photon.time = time + d*photon.n/c_light
+		photon.ctime = photon.time - photon.DOI()*photon.n/c_light
 		
-		photon.path += d 
-		photon.time += photon.path/C
 		
 		log.debug('x = %7.2f y = %7.2f z = %7.2f (in mm)', 
 					photon.x/mm,photon.y/mm,photon.z/mm)
-		log.debug('path (mm) = %7.2f time (ns) = %7.2f ', 
-					photon.path/mm,photon.time/ns)
+		log.debug('d = %7.2f mm --path (mm) = %7.2f -- time (ns) = %7.2f ctime (ns) = %7.2f ', 
+					d,photon.path/mm,photon.time/ns, photon.ctime/ns)
+
+		deb.Wait()
 
 		return jd
 
@@ -272,37 +373,71 @@ class PhotonGenerator:
 	"""
 	Generates a Xenon scintillation photon
 	"""
-	def __init__(self,WBox,tau1 = 2.2*ns,tau2 = 27*ns,tau3 = 45*ns):
-		self.tau1 = tau1
-		self.tau2 = tau2
-		self.tau3 = tau3
+	def __init__(self,lxsc):
+		self.lxsc = lxsc
+		self.lxe = self.lxsc.LXe()
+		self.wls = self.lxsc.WLS()
 	
-		self.FTAU1 = TF1("FTAU1","exp(-x/[0])",0,100)
-		self.FTAU1.SetParameter(0,self.tau1/ns)
+		self.FTAU1 = TF1("FTAU1","exp(-x/[0])",0,10*self.lxe.tau1/ns)
+		self.FTAU1.SetParameter(0,self.lxe.tau1/ns)
 
-		self.FTAU2 = TF1("FTAU2","exp(-x/[0])",0,300)
-		self.FTAU2.SetParameter(0,self.tau2/ns)
+		self.FTAU2 = TF1("FTAU2","exp(-x/[0])",0,10*self.lxe.tau2/ns)
+		self.FTAU2.SetParameter(0,self.lxe.tau2/ns)
 
-		self.FTAU3 = TF1("FTAU3","exp(-x/[0])",0,500)
-		self.FTAU3.SetParameter(0,self.tau3/ns)
+		self.FTAU3 = TF1("FTAU3","exp(-x/[0])",0,10*self.lxe.tau3/ns)
+		self.FTAU3.SetParameter(0,self.lxe.tau3/ns)
+		
+		self.FTAUWLS = TF1("FTAUWLS","exp(-x/[0])",0,10*self.wls.tau/ns)
+		self.FTAUWLS.SetParameter(0,self.wls.tau/ns)
 
-		self.WBox = WBox
+		self.WBox = self.lxsc.box
 
-	def GeneratePhoton(self,tau=2.2*ns,x=-9999,y=-9999,z=-9999,
-										tx=-9999,ty=-9999,tz=-9999):
+	def GeneratePhotonWLS(self,x=-9999,y=-9999,z=-9999,
+								tx=-9999,ty=-9999,tz=-9999):
 		"""
-		Generates tha actual photon 
+		Generates a WLS visible photon 
 		"""
-		if tau == self.tau1:
+		self.t0 = self.FTAUWLS.GetRandom()*ns
+		self.tau = self.wls.tau
+
+		self._generatePositionAndAngles(x,y,z,tx,ty,tz)
+
+		sp = SPhoton(self.t0,self.x,self.y,self.z,self.tx,self.ty,self.tz,self.tau,
+					 self.wls.ScintillationWavelength(),
+					 self.lxe.RefractionIndexBlue(),
+					 self.lxsc.PLXSC().SigmaZ())
+		return sp
+
+	def GeneratePhotonUV(self,i,x=-9999,y=-9999,z=-9999,
+								tx=-9999,ty=-9999,tz=-9999):
+		"""
+		Generates a VUV photon 
+		"""
+		if i==1:
 			self.t0 = self.FTAU1.GetRandom()*ns
-		elif tau == self.tau2:
+			self.tau = self.lxe.tau1
+		elif i == 2:
 			self.t0 = self.FTAU2.GetRandom()*ns
-		elif tau == self.tau3:
+			self.tau = self.lxe.tau2
+		elif i == 3:
 			self.t0 = self.FTAU3.GetRandom()*ns
+			self.tau = self.lxe.tau3
 		else:
-			log.error(' wrong lifetime: it must be %7.2f ns or %7.2f ns or %7.2f ns ',
-				self.tau1/ns,self.tau2/ns,self.tau3/ns)
+			log.error(' lifetime index must be 1,2,3, index = %d ',i)
 			sys.exit()
+
+		self._generatePositionAndAngles(x,y,z,tx,ty,tz)
+
+		sp = SPhoton(self.t0,self.x,self.y,self.z,self.tx,self.ty,self.tz,self.tau,
+					 self.lxe.ScintillationWavelength(),self.lxe.RefractionIndexUV(),
+					 self.lxsc.PLXSC().SigmaZ())
+		return sp
+
+	def _generatePositionAndAngles(self,x,y,z,tx,ty,tz):
+		"""
+		Generates the position and angles of the photon
+		"""
+
 		if x == -9999: # generate random
 			self.x = rnd.random()*self.WBox.X()
 		elif x > 0 and x < self.WBox.X():
@@ -346,27 +481,47 @@ class PhotonGenerator:
 			log.error('error: wrong tz = %7.2f',tz)
 			sys.exit()
 
-		sp = SPhoton(self.t0,self.x,self.y,self.z,self.tx,self.ty,self.tz,tau)
-		return sp
+	def __str__(self):
+        
+		s= """
+        	lxe = %s
+        	wls = %s
+        	lxsc = %s
 
-def GeneratePhotons(NPHOTONS):
+		"""%(self.lxe, self.wls, self.lxsc)
+		return s
+
+def GeneratePhotons():
 	c1 = TCanvas( 'c1', 'CTR', 200, 10, 600, 800 )
+	NPHOTONS = 10000
 
-	htau1 = TH1F("htau1", "tau1 (ns)", 200, 0., 5*TAU1/ns)
-	htau2 = TH1F("htau2", "tau2 (ns)", 200, 0., 5*TAU2/ns)
-	htau3 = TH1F("htau3", "tau3 (ns)", 200, 0., 5*TAU3/ns)
+	lxe = LXe()
+	wbox = Box(50*mm,50*mm,50*mm)
+	tpb = WLS()
+	sipm = SiPM()
+	lxsc = LXSC(lxe,wbox,tpb,sipm,6.2*mm,[1,1,0,0,0,0])
+
+	pg = PhotonGenerator(lxsc)
+	
+
+	htau1 = TH1F("htau1", "tau1 (ns)", 200, 0., 5*lxe.Lifetime(1)/ns)
+	htau2 = TH1F("htau2", "tau2 (ns)", 200, 0., 5*lxe.Lifetime(2)/ns)
+	htau3 = TH1F("htau3", "tau3 (ns)", 200, 0., 5*lxe.Lifetime(3)/ns)
+	htauWLS = TH1F("htauWLS", "tauWLS (ns)", 200, 0., 5*tpb.Lifetime()/ns)
 
 	for i in range(NPHOTONS):
 		log.info('scintillation photon--> = %d',i)
-		
-		uvp = pg.GeneratePhoton(tau=TAU1,x=wbox.X()/2,y=wbox.Y()/2,z=wbox.Z()/2)
+				
+		uvp = pg.GeneratePhotonUV(1,x=wbox.X()/2,y=wbox.Y()/2,z=wbox.Z()/2)
 		htau1.Fill(uvp.T0()/ns)
-		uvp = pg.GeneratePhoton(tau=TAU2,x=wbox.X()/2,y=wbox.Y()/2,z=wbox.Z()/2)
+		uvp = pg.GeneratePhotonUV(2,x=wbox.X()/2,y=wbox.Y()/2,z=wbox.Z()/2)
 		htau2.Fill(uvp.T0()/ns)
-		uvp = pg.GeneratePhoton(tau=TAU3,x=wbox.X()/2,y=wbox.Y()/2,z=wbox.Z()/2)
+		uvp = pg.GeneratePhotonUV(3,x=wbox.X()/2,y=wbox.Y()/2,z=wbox.Z()/2)
 		htau3.Fill(uvp.T0()/ns)
+		bp = pg.GeneratePhotonWLS(x=wbox.X()/2,y=wbox.Y()/2,z=wbox.Z()/2)
+		htauWLS.Fill(bp.T0()/ns)
 
-	c1.Divide(1,3)
+	c1.Divide(2,2)
 	c1.cd(1)
 	gPad.SetLogy()
 	htau1.Draw()
@@ -379,66 +534,97 @@ def GeneratePhotons(NPHOTONS):
 	gPad.SetLogy()
 	htau3.Draw()
 
+	c1.cd(4)
+	gPad.SetLogy()
+	htauWLS.Draw()
+
 	c1.Show()
 	wait()
 
 
-def ScintillationEvent(NPHOTONS):
+def ScintillationEvent(tauIndex):
 	"""
-	Generate and propagate photons to the readout faces 
+	Generate and propagate photons to the readout faces
+	tauIndex =1,2,3 for one of the three lifetimes of Xe  
 	"""
-	c1 = TCanvas( 'c1', 'S', 200, 10, 600, 800 )
-	htau = TH1F("htau", "tau (ns)", 200, 0., 5*TAU1/ns)
-	htime = TH1F("htime", "photon time (ns)", 200, 0., 5*TAU1/ns)
-	hpath = TH1F("hpath", "photon path (mm)", 100, 0., 10*LX)
-	hb = TH1F("hb", "number of bounces", 20, 0., 20.)
+
+	c1 = TCanvas( 'c1', 'CTR', 200, 10, 600, 800 )
+	NPHOTONS = 20000
+	MAX_BOUNCES=100
+
+	lxe = LXe()
+	# plxsc = PLXSC(sigmax=1e-3*mm, sigmay=1e-3*mm, sigmaz=1e-3*mm, sigma0=0.05,
+ #               sensorEff=1.0, wlsEff=1.0, uvRef=1.0, wlsRef=1.0)
+
+	plxsc = PLXSC(sigmax=1*mm, sigmay=1*mm, sigmaz=1*mm, sigma0=0.05,
+               sensorEff=0.9, wlsEff=0.9, uvRef=0.95, wlsRef=0.98)
+
+	wbox = Box(50*mm,50*mm,50*mm)
+	tpb = WLS()
+	sipm = SiPM()
+	imask = [1,0,0]
+	lxsc = LXSC(lxe,wbox,tpb,plxsc,sipm,6.2*mm,imask)
+	
+	pg = PhotonGenerator(lxsc)
+	pt = PhotonTransport(lxsc)
+	
+	htau = TH1F("htau", "tau (ns)", 200, 0., 5*lxe.Lifetime(tauIndex)/ns)
+	htime = TH1F("htime", "photon time (ns)", 200, 0., 5*lxe.Lifetime(tauIndex)/ns)
+	hctime = TH1F("hctime", "photon time (ns)", 200, 0., 5*lxe.Lifetime(tauIndex)/ns)
+	hpath = TH1F("hpath", "photon path (mm)", 100, 0., 10*wbox.X())
+	hb = TH1F("hb", "number of bounces", 50, 0., 50.)
 	
 	for i in range(NPHOTONS):
 		log.info('scintillation photon--> = %d',i)
-		log.debug('tau1  = %7.2f ns x = y = z = %7.2f mm',TAU1/mm,(wbox.X()/2)/mm)
+		log.debug('tau = %7.2f ns x = y = z = %7.2f mm',lxe.Lifetime(tauIndex)/ns,(wbox.X()/2)/mm)
 
-		#Generate photon
-		uvp = pg.GeneratePhoton(tau=TAU1,x=wbox.X()/2,y=wbox.Y()/2,z=wbox.Z()/2)
+		#Generate VUV photon
+		uvp = pg.GeneratePhotonUV(tauIndex,x=wbox.X()/2,y=wbox.Y()/2,z=wbox.Z()/2)
 		htau.Fill(uvp.T0()/ns)
+
+		log.debug('Generating UV photon = %s',uvp)
+		deb.Wait()
+
 		
 		n=0
 		while n < MAX_BOUNCES: #propagate up to the max number of bounces
-			fi = pt.step(uvp)  #step the photon to the next face
+			fi = pt.Step(uvp)  #step the photon to the next face
 
 			log.debug('face	index  = %d',fi)
+
 			
-			if fi == 0: #hitting x=0 or x=l face, photon is absorbed
-				log.debug('photon hits instrumented face (x), index  = %d',fi)
+			if pt.TestInstrumentedFace(fi) == 1: #hitting instrumented face, photon is absorbed
+				log.debug('photon hits instrumented face index  = %d',fi)
 
-				#Efficiency of detection
-				test = rnd.uniform(0.,1.)
+				#Efficiency of detection by sensor plane
 
-				if test > DETECTION_EFF:
-					log.debug('photon dice = %7.2f, det eff = %7.2f, not detected',
-						test,DETECTION_EFF )	
-					break
-				else:
+				if pt.TestSensorEfficiency() == True:
 					log.debug('photon is detected by sensors')
+					
 					#histogram path and time
 					htime.Fill(uvp.Time()/ns)
 					hpath.Fill(uvp.Path()/mm)
 
-					#Sensor Response goes here. 
+					#Sensor Response goes here.
+					hctime.Fill(uvp.CTime()/ns)
 					break
 
-			else: #is photon absorbed by Teflon?
-					
-					test = rnd.uniform(0.,1.)
-					if test > LXE_REFLECTIVITY:
-						log.debug('photon dice = %7.2f, LXE reflectivity = %7.2f, not detected',
-						test,LXE_REFLECTIVITY )
+				else:
+					log.debug('photon not detected')
+					break
+				
 
-						break
-					else: # Lambertian reflection
-						log.debug('Lambertian reflection in face index = %d',fi)
-						pt.lambert(uvp,fi) 
-						hb.Fill(n)
-						n+=1
+			else: #is VUV photon absorbed by Teflon?
+				test = pt.TestReflectivityUV()
+					
+				if test == False:
+					log.debug('photon absorbed')
+					break
+				else: # Lambertian reflection
+					log.debug('Lambertian reflection in face index = %d',fi)
+					pt.Lambert(uvp,fi) 
+					hb.Fill(n)
+			n+=1
 			
 	
 	c1.Divide(2,2)
@@ -452,36 +638,19 @@ def ScintillationEvent(NPHOTONS):
 
 	c1.cd(3)
 	gPad.SetLogy()
-	hpath.Draw()
+	hctime.Draw()
 
 	c1.cd(4)
 	gPad.SetLogy()
-	hb.Draw()
+	hpath.Draw()
 
 	c1.Show()
 	wait()
 
 
 if __name__ == '__main__':
+	#GeneratePhotons()
 	
-	NPHOTONS = 20000
-	TAU1 = 2.2*ns
-	TAU2 = 27*ns
-	TAU3 = 45*ns
-	LX = 5*cm
-	LY = 5*cm
-	LZ = 5*cm
-	C = 30*cm/ns
-	LXE_REFLECTIVITY = 0.95
-	MAX_BOUNCES = 100
-	DETECTION_EFF=0.9 #overall efficiency of detection plane
-
-	
-	wbox = Box(LX,LY,LZ)
-	pt = PhotonTransport(wbox)
-	pg = PhotonGenerator(wbox)
-
-	GeneratePhotons(NPHOTONS)
-	ScintillationEvent(NPHOTONS)
+	ScintillationEvent(1)
 
 

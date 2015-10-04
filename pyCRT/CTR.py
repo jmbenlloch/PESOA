@@ -64,9 +64,9 @@ class Sensor:
 
 	def Jitter(self):
 		"""
-		Time jitter
+		Time jitter: J is FWHM, divide by 2.355 to translate to sigma 
 		"""
-		tj = rnd.gauss(0, self.J*2.355)
+		tj = rnd.gauss(0, self.J/2.355)
 		return tj
 
 	def SPE(self,t):

@@ -1,4 +1,3 @@
-from Util import *
 from LXe import *
 
 class Box:
@@ -142,58 +141,150 @@ class SiPM:
 
     return s
 
+class WLS:
+  """
+    Defines a Wavelength shifter
+  """
+  def __init__(self,name="TPB", lamda=420*nm, tau=1*ns):
+    self.name = name
+    self.lamda = lamda
+    self.tau = tau
 
+  def Name(self):
+    return self.name
+
+  def ScintillationWavelength(self):
+    return self.lamda
+
+  def Lifetime(self):
+    return self.tau 
+
+  def __str__(self):
+    s= """
+      Name = %s 
+      Scintillation Wavelength of shifted light = %7.2f nm
+      Lifetime for shifting = %7.2f ns
+        """%(self.Name(), self.ScintillationWavelength()/nm, self.Lifetime()/ns)
+
+    return s
+
+class PLXSC:
+  """
+    Defines the Performance of the LXSC: 
+    sigma_0 is the intrinsic resolution to add in cuadrature to the photoelectron statistics
+    sensorEff is the detection efficiency of the sensor plane(s)
+    uvRef is the reflectivity to the vuv light
+    wlsRef is the reflectivity to the wls shifted (blue) light
+    wlsEff is the WLS efficiency 
+  """
+  def __init__(self, sigmax=1*mm, sigmay=1*mm, sigmaz=1*mm, sigma0=0.05,
+               sensorEff=0.9, wlsEff=0.8, uvRef=0.95, wlsRef=0.98):
+    self.sigmax = sigmax 
+    self.sigmay = sigmay
+    self.sigmaz = sigmaz
+    self.sigma0 = sigma0
+    self.sensorEff = sensorEff
+    self.wlsEff = wlsEff
+    self.uvRef = uvRef
+    self.wlsRef = wlsRef
+
+  def SigmaX(self):
+    return self.sigmax
+  def SigmaY(self):
+    return self.sigmay
+  def SigmaZ(self):
+    return self.sigmaz
+  def Sigma0(self):
+    return self.sigma0
+  def SensorEfficiency(self):
+    return self.sensorEff
+  def WLSEfficiency(self):
+    return self.wlsEff
+  def ReflectivityUV(self):
+    return self.uvRef
+  def ReflectivityWLS(self):
+    return self.wlsRef
+
+
+  def __str__(self):
+    s= """
+      sigmax=%7.2f mm, sigmay=%7.2f mm, sigmaz=%7.2f ,sigma0=%7.2f
+      sensorEff=%7.2f, wlsEff=%7.2f, uvRef=%7.2f, wlsEff=%7.2f
+      
+        """%(self.SigmaX()/mm, self.SigmaY()/mm, self.SigmaZ()/mm, self.Sigma0(),
+             self.SensorEfficiency(), self.WLSEfficiency(), self.ReflectivityUV(), 
+             self.ReflectivityWLS())
+
+    return s
+  
 class LXSC:
     """
     Defines a Liquid Xenon Scintillating Cell 
-    instMask is a list which defines the mask o instrumented faces.
-    it runs from 0 to 5: (0 = entry face, 1= exit face, 2= left face, 
-    3 = right face, 4 = upper face, 5 = bottom face): 1 means face
-    is instrumented with SiPMs, 0 means is not.
+    instMask is a list which defines the mask of instrumented faces.
+    it runs from 0 to 2: 
+      0 = entry face/exit face (x), 
+      1=  left face/right face (y) 
+      2=  topface/bottom face (z), 
+    Faces are assumed to be instrumented in pairs 
+    [1,0,0] means that both x faces are instrumented and the other faces are not
     """
-    def __init__(self,Xe, box, siPM, pitch,
-                 instMask=[1,1,0,0,0,0]):
+    def __init__(self,lxe, box, wls, plxsc, sipm, pitch,
+                 instMask=[1,0,0]):
 
-        self.Xe = Xe
-        self.box=box
-        self.siPM=siPM
-        self.pitch = pitch 
-        self.instMask = instMask
+      self.lxe = lxe
+      self.box=box
+      self.plxsc = plxsc
+      self.sipm=sipm
+      self.wls = wls
+      self.pitch = pitch 
+      self.instMask = instMask
+      
+    def LXe(self):
+      return self.lxe
+
+    def Box(self):
+      return self.box
+    
+    def WLS(self):
+      return self.wls
+
+    def PLXSC(self):
+      return self.plxsc
 
     def SensorPitch(self):
       return self.pitch
 
-    def Box(self):
-      return self.box
-
     def SiPM(self):
-      return self.siPM
+      return self.sipm
 
     def Mass(self):
-        return self.box.V()*self.Xe.Density() 
+      return self.Box().V()*self.LXe().Density() 
 
     def CostOfXenon(self):
-      return float((self.Mass()/g)*self.Xe.CostPerGram())
+      return float((self.Mass()/g)*self.LXe().CostPerGram())
 
     def ScintillationPhotons(self,E):
-        return self.Xe.ScintillationPhotons(E)
+      return self.LXe.ScintillationPhotons(E)
+
+    def SPhotonsAt511KeV(self,i):
+      return self.LXe.SPhotonsAt511KeV(i)
 
     def InstrumentedMask(self):
-        return self.instMask
+      return self.instMask
 
     def SiXZ(self):
-        return int(self.Box().XZ()/self.SensorPitch()**2)-1
+      return int(self.Box().XZ()/self.SensorPitch()**2)-1
 
     def SiYZ(self):
-        return int(self.Box().YZ()/self.SensorPitch()**2)-1
+      return int(self.Box().YZ()/self.SensorPitch()**2)-1
 
     def SiXY(self):
-        return int(self.Box().XY()/self.SensorPitch()**2)-1
+      return int(self.Box().XY()/self.SensorPitch()**2)-1
 
     def NumberOfSiPM(self):
-      nsipm = self.SiXY()*self.instMask[0] + self.SiXY()*self.instMask[1]
-      nsipm += self.SiYZ()*self.instMask[2]+ self.SiYZ()*self.instMask[3]
-      nsipm +=self.SiXZ()*self.instMask[4] +self.SiXZ()*self.instMask[5]
+      nsipm = 2*self.SiXY()*self.instMask[0] 
+      nsipm += 2*self.SiYZ()*self.instMask[1]
+      nsipm +=2*self.SiXZ()*self.instMask[2] 
 
       return int(nsipm)
 
@@ -202,14 +293,16 @@ class LXSC:
 
     def CostOfCell(self):
       return float(self.CostOfSiPM()+self.CostOfXenon())
-     
-
+    
     def __str__(self):
         
         s= """
-        LXSC
+        LXe =%s
         BOX = %s
+        WLS = %s
+        Performance LXSC  = %s
         SiPM = %s
+        mask = %s
         pitch = %7.2f mm
         mass = %7.2f g
         number of SiPMs = %d
@@ -219,8 +312,8 @@ class LXSC:
 
         
        
-    """%(self.Box(),
-         self.SiPM(),
+    """%(self.LXe(),self.Box(),self.WLS(),self.PLXSC(),self.SiPM(),
+         self.InstrumentedMask(),
          self.SensorPitch(), 
          self.Mass()/g,
          self.NumberOfSiPM(),
@@ -235,7 +328,9 @@ if __name__ == '__main__':
     
     lxe = LXe()
     box = Box(50*mm,50*mm,50*mm)
+    tpb = WLS()
+    plxsc = PLXSC()
     sipm = SiPM()
-    lxsc = LXSC(lxe,box,sipm,6.2*mm,[1,1,0,0,0,0])
+    lxsc = LXSC(lxe,box,tpb,plxsc,sipm,6.2*mm,[1,0,0])
     
     print lxsc

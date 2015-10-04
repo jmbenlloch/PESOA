@@ -2,7 +2,7 @@
 Utilities
 """
 from math import *
-from system_of_units import *
+from PhysicalConstants import *
 
 def wait():
     raw_input("Press a key...")
