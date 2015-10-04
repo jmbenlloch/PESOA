@@ -1,14 +1,11 @@
 import random as rnd
-import logging 
+from BLogging import *
 from LXSC import *
 from ROOT import *
 
-ch = logging.StreamHandler()
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-ch.setFormatter(formatter)
 
 log =logging.getLogger("Photon")
-log.setLevel(logging.DEBUG)
+log.setLevel(logging.INFO)
 log.addHandler(ch)
 
 class SPhoton:
@@ -192,13 +189,20 @@ class PhotonTransport:
 		ly = self.box.Y()
 		lz = self.box.Z()
 		
-		log.debug('x0 = %7.2f y0 = %7.2f z0 = %7.2f', x0/mm,y0/mm,z0/mm)
+		log.debug('x0 = %7.2f mm y0 = %7.2f mm z0 = %7.2f mm', x0/mm,y0/mm,z0/mm)
 		log.debug('tx = %7.2f ty = %7.2f tz = %7.2f', tx,ty,tz)
 
 		D=[]
 		xx = -9999
 		yy = -9999
 		zz = -9999
+
+		if x0 == 0 or lx-x0 == 0:  #face x
+			return 0
+		if y0 == 0 or ly-y0 == 0:  #face y
+			return 1
+		if z0 == 0 or lz-z0 == 0:  #face z
+			return 2
 
 		if -x0/tx >0 :
 			D.append(-x0/tx)
@@ -233,10 +237,6 @@ class PhotonTransport:
 				-(z0/tz)/mm,((lz-z0)/tz)/mm)
 			sys.exit()
 
-		# print D
-		# print min(D)
-		# print D.index(min(D))
-
 		d = min(D)
 		jd = D.index(d)
 
@@ -256,11 +256,10 @@ class PhotonTransport:
 			photon.y = y0 + d*ty
 			photon.z = zz
 
-		path = photon.path + d
-		photon.path = path 
-		time = photon.time + photon.path/C
-		photon.time = time
-
+		
+		photon.path += d 
+		photon.time += photon.path/C
+		
 		log.debug('x = %7.2f y = %7.2f z = %7.2f (in mm)', 
 					photon.x/mm,photon.y/mm,photon.z/mm)
 		log.debug('path (mm) = %7.2f time (ns) = %7.2f ', 
@@ -350,27 +349,12 @@ class PhotonGenerator:
 		sp = SPhoton(self.t0,self.x,self.y,self.z,self.tx,self.ty,self.tz,tau)
 		return sp
 
-if __name__ == '__main__':
-
+def GeneratePhotons(NPHOTONS):
 	c1 = TCanvas( 'c1', 'CTR', 200, 10, 600, 800 )
-	
-	NPHOTONS = 1000
-	TAU1 = 2.2*ns
-	TAU2 = 27*ns
-	TAU3 = 45*ns
-	LX = 5*cm
-	LY = 5*cm
-	LZ = 5*cm
 
-	
 	htau1 = TH1F("htau1", "tau1 (ns)", 200, 0., 5*TAU1/ns)
 	htau2 = TH1F("htau2", "tau2 (ns)", 200, 0., 5*TAU2/ns)
 	htau3 = TH1F("htau3", "tau3 (ns)", 200, 0., 5*TAU3/ns)
-	
-
-	wbox = Box(LX,LY,LZ)
-	pt = PhotonTransport(wbox)
-	pg = PhotonGenerator(wbox)
 
 	for i in range(NPHOTONS):
 		log.info('scintillation photon--> = %d',i)
@@ -381,7 +365,6 @@ if __name__ == '__main__':
 		htau2.Fill(uvp.T0()/ns)
 		uvp = pg.GeneratePhoton(tau=TAU3,x=wbox.X()/2,y=wbox.Y()/2,z=wbox.Z()/2)
 		htau3.Fill(uvp.T0()/ns)
-
 
 	c1.Divide(1,3)
 	c1.cd(1)
@@ -398,3 +381,107 @@ if __name__ == '__main__':
 
 	c1.Show()
 	wait()
+
+
+def ScintillationEvent(NPHOTONS):
+	"""
+	Generate and propagate photons to the readout faces 
+	"""
+	c1 = TCanvas( 'c1', 'S', 200, 10, 600, 800 )
+	htau = TH1F("htau", "tau (ns)", 200, 0., 5*TAU1/ns)
+	htime = TH1F("htime", "photon time (ns)", 200, 0., 5*TAU1/ns)
+	hpath = TH1F("hpath", "photon path (mm)", 100, 0., 10*LX)
+	hb = TH1F("hb", "number of bounces", 20, 0., 20.)
+	
+	for i in range(NPHOTONS):
+		log.info('scintillation photon--> = %d',i)
+		log.debug('tau1  = %7.2f ns x = y = z = %7.2f mm',TAU1/mm,(wbox.X()/2)/mm)
+
+		#Generate photon
+		uvp = pg.GeneratePhoton(tau=TAU1,x=wbox.X()/2,y=wbox.Y()/2,z=wbox.Z()/2)
+		htau.Fill(uvp.T0()/ns)
+		
+		n=0
+		while n < MAX_BOUNCES: #propagate up to the max number of bounces
+			fi = pt.step(uvp)  #step the photon to the next face
+
+			log.debug('face	index  = %d',fi)
+			
+			if fi == 0: #hitting x=0 or x=l face, photon is absorbed
+				log.debug('photon hits instrumented face (x), index  = %d',fi)
+
+				#Efficiency of detection
+				test = rnd.uniform(0.,1.)
+
+				if test > DETECTION_EFF:
+					log.debug('photon dice = %7.2f, det eff = %7.2f, not detected',
+						test,DETECTION_EFF )	
+					break
+				else:
+					log.debug('photon is detected by sensors')
+					#histogram path and time
+					htime.Fill(uvp.Time()/ns)
+					hpath.Fill(uvp.Path()/mm)
+
+					#Sensor Response goes here. 
+					break
+
+			else: #is photon absorbed by Teflon?
+					
+					test = rnd.uniform(0.,1.)
+					if test > LXE_REFLECTIVITY:
+						log.debug('photon dice = %7.2f, LXE reflectivity = %7.2f, not detected',
+						test,LXE_REFLECTIVITY )
+
+						break
+					else: # Lambertian reflection
+						log.debug('Lambertian reflection in face index = %d',fi)
+						pt.lambert(uvp,fi) 
+						hb.Fill(n)
+						n+=1
+			
+	
+	c1.Divide(2,2)
+	c1.cd(1)
+	gPad.SetLogy()
+	htau.Draw()
+	
+	c1.cd(2)
+	gPad.SetLogy()
+	htime.Draw()
+
+	c1.cd(3)
+	gPad.SetLogy()
+	hpath.Draw()
+
+	c1.cd(4)
+	gPad.SetLogy()
+	hb.Draw()
+
+	c1.Show()
+	wait()
+
+
+if __name__ == '__main__':
+	
+	NPHOTONS = 20000
+	TAU1 = 2.2*ns
+	TAU2 = 27*ns
+	TAU3 = 45*ns
+	LX = 5*cm
+	LY = 5*cm
+	LZ = 5*cm
+	C = 30*cm/ns
+	LXE_REFLECTIVITY = 0.95
+	MAX_BOUNCES = 100
+	DETECTION_EFF=0.9 #overall efficiency of detection plane
+
+	
+	wbox = Box(LX,LY,LZ)
+	pt = PhotonTransport(wbox)
+	pg = PhotonGenerator(wbox)
+
+	GeneratePhotons(NPHOTONS)
+	ScintillationEvent(NPHOTONS)
+
+
