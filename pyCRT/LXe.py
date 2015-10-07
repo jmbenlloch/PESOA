@@ -12,6 +12,7 @@ class LXe:
     
     self.Z = 54
     self.A = 131.29*g/mol
+    self.T = 160*kelvin
     self.x0 = 8.48 * g/cm2
     self.rho = 3*g/cm3
     self.dedx=0.35*keV/micron  
@@ -40,6 +41,11 @@ class LXe:
     """
     return self.A
 
+  def TemperatureAt1Bar(self):
+    """
+    LXe Temperature
+    """
+    return self.T
   def X0(self):
     """
     Xenon radiation length
@@ -184,6 +190,7 @@ class LXe:
   def __str__(self):
     s= """
         Name = LXe  Z = %d  A = %7.4g g/mole 
+        Temperature at atm pressure (1 bar) = %7.2f kelvin
         Density = %7.4g g/cm3 X0= %7.4g g/cm2 X1= %7.4g cm
         de/dx = %7.4g keV/cm Ws = %7.4g eV Wi = %7.4g eV
         Rayleigh Scattering = %7.2g cm
@@ -195,6 +202,7 @@ class LXe:
         tau2 = %7.2f ns, ratio tau 2 = %7.2f
         tau3 = %7.2f ns, ratio tau 3 = %7.2f 
         """%(self.AtomicNumber(),self.AtomicMass()/(g/mol),
+          self.TemperatureAt1Bar()/kelvin,
           self.Density()/(g/cm3),
           self.X0()/(g/cm2),(self.X0()/self.Density())/cm,
           self.dEdX()/(keV/cm),self.Ws()/eV, self.Wi()/eV,

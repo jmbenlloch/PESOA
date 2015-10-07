@@ -283,7 +283,6 @@ henry = weber/ampere	# henry = 1.60217e-7*MeV*(ns/eplus)**2
 # Temperature
 #
 kelvin = 1.
-celsius=kelvin-273.15
 
 #
 # Amount of substance
@@ -332,6 +331,9 @@ lux = lumen/meter2
 perCent     = 0.01 
 perThousand = 0.001
 perMillion  = 0.000001
+
+def celsius(tKelvin):
+	return tKelvin-273.15
 
 
 

@@ -8,10 +8,11 @@ ch = logging.StreamHandler()
 #formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 formatter = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
 ch.setFormatter(formatter)
+#ch.addLevelName(VDEBUG,5)
 
-class Debug:
+class Switch:
 	"""
-	A very simple class to control stepping
+	A very simple class to control switching 
 	"""
 	def __init__(self,name,switch=1):
 		self.name = name
@@ -24,4 +25,6 @@ class Debug:
 		self.switch = 1
 	def SwitchOff(self):
 		self.switch = 0
+	def Switch(self):
+		return self.switch
 
