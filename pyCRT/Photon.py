@@ -23,25 +23,42 @@ class SPhoton:
 		self.lamda = lamda  #photon wavelenght
 		self.n = n #refraction index 
 		self.tau = tau 
-		self.t0 = t0  #creation time wrt interaction time
-		self.time = self.t0  #phton timestamp initially set to t0
 		self.path = 0  #accumulated path
 		self.nb = 0  #number of bounces
-		self.xyz = xyz 
-		self.txyz = txyz
 
+		self.txyz = txyz
+		self.xyzt0 = Point4D(xyz.x,xyz.y,xyz.z,t0)
+		self.xyzt = Point4D(xyz.x,xyz.y,xyz.z,t0)
 		
 	def Position(self):
 		"""
-		Position
+		actual position
 		"""
-		return self.xyz
+		return Point3D(self.xyzt.x,self.xyzt.y,self.xyzt.z)
+
+	def Time(self):
+		"""
+		actual time with respect to interaction time 
+		"""
+		return self.xyzt.t
 
 	def DirectionCosines(self):
 		"""
-		cosines
+		actual direction cosines
 		"""
 		return self.txyz
+
+	def T0(self):
+		"""
+		Creation time with respect to interaction time 
+		"""
+		return self.xyzt0.t
+
+	def Position0(self):
+		"""
+		Position  with respect to interaction time 
+		"""
+		return Point3D(self.xyzt0.x,self.xyzt0.y,self.xyzt0.z)
 
 	def NBounces(self):
 		"""
@@ -66,19 +83,7 @@ class SPhoton:
 		accumulated path  
 		"""
 		return self.path
-
-	def T0(self):
-		"""
-		Creation time with respect to interaction time 
-		"""
-		return self.t0
-
-	def Time(self):
-		"""
-		accumulated time with respect to interaction time 
-		"""
-		return self.time
-
+	
 	def N(self):
 		"""
 		refraction index
@@ -88,23 +93,43 @@ class SPhoton:
 	def __str__(self):
 
 		s= """
-	     
-	      t0 = %7.4g ns time = %7.4g ns
-	      x = %7.2f mm y = %7.2f mm z = %7.2f mm 
-	      tx = %7.2f ty = %7.2f tz = %7.2f
+		  initial coordinates (x,y,z,t) = %s
+		  actual coordinates (x,y,z,t) = %s
+		  actual cosines (tx,ty,tz) = %s
 	      tau = %7.4g ns, 
 	      path = %7.4g mm,  
 	      Lambda = %7.2f n = %7.2f
         
-			"""%(self.T0()/ns,self.Time()/ns,
-				self.Position().X()/mm, self.Position().Y()/mm, self.Position().Z()/mm,
-				self.DirectionCosines().TX(), self.DirectionCosines().TY(), 
-				self.DirectionCosines().TZ(), 
+			"""%(self.xyzt0,self.xyzt, self.txyz,
 				self.Tau()/ns, 
 				self.Path()/mm,
 				self.Lambda()/nm, self.N())
 
 		return s
+
+class Photoelectron:
+	"""
+	Represents a photoelectron:
+	Takes the initial photon instance,  and the sipm number.
+	Only the photon is set at instance time 
+	"""
+	def __init__(self,photon):
+		self.photon = photon
+		self.ctime = 0
+		self.crtime = 0
+		self.nsipm = 0
+
+	def __str__(self):
+
+		s= """
+		  Photon = %s
+		  ctime = %7.2f ns crtime = %7.2f ns 
+		  SiPM number = %d
+        
+			"""%(self.photon, self.ctime, self.crtime, self.nsipm)
+
+		return s
+
 
 class PhotonTransport:
 	"""
@@ -197,18 +222,18 @@ class PhotonTransport:
 		random generation of the other two cosinus. 
 		"""
 		if jd == 0:
-			photon.DirectionCosines().x = -photon.DirectionCosines().X()
-			photon.DirectionCosines().y = rnd.uniform(-1.,1.)
-			photon.DirectionCosines().z = rnd.uniform(-1.,1.)
+			photon.txyz.x = -photon.txyz.x
+			photon.txyz.y = rnd.uniform(-1.,1.)
+			photon.txyz.z = rnd.uniform(-1.,1.)
 		elif jd == 1: 
-			photon.DirectionCosines().x = rnd.uniform(-1.,1.)
-			photon.DirectionCosines().y = -photon.DirectionCosines().Y()
-			photon.DirectionCosines().z = rnd.uniform(-1.,1.)
+			photon.txyz.x = rnd.uniform(-1.,1.)
+			photon.txyz.y = -photon.txyz.y
+			photon.txyz.z = rnd.uniform(-1.,1.)
 
 		elif jd == 2:
-			photon.DirectionCosines().x = rnd.uniform(-1.,1.)
-			photon.DirectionCosines().y = rnd.uniform(-1.,1.)
-			photon.DirectionCosines().z = -photon.DirectionCosines().Z() 
+			photon.txyz.x = rnd.uniform(-1.,1.)
+			photon.txyz.y = rnd.uniform(-1.,1.)
+			photon.txyz.z = -photon.txyz.z 
 		else:
 			print "error: face index =",jd
 			sys.exit()  
@@ -272,9 +297,9 @@ class PhotonTransport:
 
 		D=[]
 		
-		xx = self.ComputePath(self,D,lx,x0,tx)
-		yy = self.ComputePath(self,D,ly,y0,ty)
-		zz = self.ComputePath(self,D,lz,z0,tz)
+		xx = self.ComputePath(D,lx,x0,tx)
+		yy = self.ComputePath(D,ly,y0,ty)
+		zz = self.ComputePath(D,lz,z0,tz)
 
 		d = min(D)
 		jd = D.index(d)
@@ -283,27 +308,25 @@ class PhotonTransport:
 				jd,d/mm)
 
 		if jd == 0: # intersects x =0 or x =l plane
-			photon.Position().x = xx
-			photon.Position().y = y0 + d*ty
-			photon.Position().z = z0 + d*tz
+			photon.xyzt.x = xx
+			photon.xyzt.y = y0 + d*ty
+			photon.xyzt.z = z0 + d*tz
 		elif jd == 1:  # intersects y =0 or y =l plane
-			photon.Position().x = x0 + d*tx
-			photon.Position().y = yy
-			photon.Position().z = z0 + d*tz
+			photon.xyzt.x = x0 + d*tx
+			photon.xyzt.y = yy
+			photon.xyzt.z = z0 + d*tz
 		elif jd == 2:  # intersects z =0 or z =l plane
-			photon.Position().x = x0 + d*tx
-			photon.Position().y = y0 + d*ty
-			photon.Position().z = zz
+			photon.xyzt.x = x0 + d*tx
+			photon.xyzt.y = y0 + d*ty
+			photon.xyzt.z = zz
 
 		photon.path = path + d 
-		photon.time = time + d*photon.N()/c_light
+		photon.xyzt.t = time + d*photon.N()/c_light
 		
-		
-		log.debug('step: x = %7.2f y = %7.2f z = %7.2f (in mm)', 
-					photon.Position().X()/mm,photon.Position().Y()/mm,
-					photon.Position().Z()/mm)
-		log.debug('d = %7.2f mm --path (mm) = %7.2f -- time (ns) = %7.2f ', 
-					d,photon.Path()/mm,photon.Time()/ns)
+		log.debug('step: Photon at xyzt = %s',photon.xyzt)
+		log.debug('step: Photon at xyzt0 = %s',photon.xyzt0)
+		log.debug('d = %7.2f mm --path (mm) = %7.2f -- time (ps) = %7.2f ', 
+					d,photon.Path()/mm,photon.Time()/ps)
 
 		deb.Wait()
 
@@ -341,12 +364,11 @@ class PhotonGenerator:
 		"""
 		Generates a WLS visible photon 
 		"""
-		self.t0 = self.FTAUWLS.GetRandom()*ns
-		self.tau = self.wls.tau
+		t = self.FTAUWLS.GetRandom()*ns
 		
 		self._generatePositionAndAngles(x,y,z,tx,ty,tz)
-
-		sp = SPhoton(self.t0,self.position,self.cosines,self.tau,
+		
+		sp = SPhoton(t,self.position,self.cosines,self.wls.tau,
 					 self.wls.ScintillationWavelength(),
 					 self.lxe.RefractionIndexBlue())
 					 
@@ -357,23 +379,38 @@ class PhotonGenerator:
 		"""
 		Generates a VUV photon 
 		"""
+		t = 0
+		tau = 0
 		if i==1:
-			self.t0 = self.FTAU1.GetRandom()*ns
-			self.tau = self.lxe.tau1
+			t = self.FTAU1.GetRandom()*ns
+			tau = self.lxe.tau1
 		elif i == 2:
-			self.t0 = self.FTAU2.GetRandom()*ns
-			self.tau = self.lxe.tau2
+			t = self.FTAU2.GetRandom()*ns
+			tau = self.lxe.tau2
 		elif i == 3:
-			self.t0 = self.FTAU3.GetRandom()*ns
-			self.tau = self.lxe.tau3
+			t = self.FTAU3.GetRandom()*ns
+			tau = self.lxe.tau3
 		else:
 			log.error(' lifetime index must be 1,2,3, index = %d ',i)
 			sys.exit()
 
+		log.debug('In GeneratePhotonUV: t0 = %7.2f ns ',
+			t/ns)
+		log.debug('In GeneratePhotonUV: x = %7.2f mm y = %7.2f mm z = %7.2f mm',
+			x/mm,y/mm,z/mm)
+		log.debug('In GeneratePhotonUV: tx = %7.2f mm ty = %7.2f mm tz = %7.2f mm',
+			tx/mm,ty/mm,tz/mm)
 		self._generatePositionAndAngles(x,y,z,tx,ty,tz)
 
-		sp = SPhoton(self.t0,self.position,self.cosines,self.tau,
+		log.debug('In GeneratePhotonUV: position = %s',self.position)
+		log.debug('In GeneratePhotonUV: cosines = %s',self.cosines)
+
+			
+		sp = SPhoton(t,self.position,self.cosines,tau,
 					 self.lxe.ScintillationWavelength(),self.lxe.RefractionIndexUV())
+
+		log.debug("generated photon =%s",sp)
+		deb.Wait()
 					 
 		return sp
 
@@ -392,6 +429,21 @@ class PhotonGenerator:
 			sys.exit()
 		return xx
 
+	def _generateCosine(self,x):
+		"""
+		Generates one point 
+		"""
+		xx=0
+
+		if x == -9999: # generate random
+			xx= rnd.uniform(-1.,1.)
+		elif x >= -1 and x <= 1:
+			xx = x
+		else:
+			log.error('error: tx outside box: tx  = %7.2f',x)
+			sys.exit()
+		return xx
+
 	def _generatePositionAndAngles(self,x,y,z,tx,ty,tz):
 		"""
 		Generates the position and angles of the photon
@@ -399,9 +451,9 @@ class PhotonGenerator:
 		self.position.x = self._generatePoint(x)
 		self.position.y = self._generatePoint(y)
 		self.position.z = self._generatePoint(z)
-		self.cosines.x = self._generatePoint(tx)
-		self.cosines.y = self._generatePoint(ty)
-		self.cosines.z = self._generatePoint(tz)
+		self.cosines.x = self._generateCosine(tx)
+		self.cosines.y = self._generateCosine(ty)
+		self.cosines.z = self._generateCosine(tz)
 
 		
 	def __str__(self):
@@ -438,48 +490,23 @@ def GeneratePhotons():
 	pg = PhotonGenerator(lxsc)
 	
 
-	# htau1 = TH1F("htau1", "tau1 (ns)", 200, 0., 5*lxe.Lifetime(1)/ns)
-	# htau2 = TH1F("htau2", "tau2 (ns)", 200, 0., 5*lxe.Lifetime(2)/ns)
-	# htau3 = TH1F("htau3", "tau3 (ns)", 200, 0., 5*lxe.Lifetime(3)/ns)
-	# htauWLS = TH1F("htauWLS", "tauWLS (ns)", 200, 0., 5*tpb.Lifetime()/ns)
-
 	for i in range(NPHOTONS):
 		log.info('scintillation photon--> = %d',i)
 				
 		uvp = pg.GeneratePhotonUV(1,x=wbox.X()/2,y=wbox.Y()/2,z=wbox.Z()/2)
 		th.FillH1("htau1",uvp.T0()/ns)
-		#htau1.Fill(uvp.T0()/ns)
+		
 		uvp = pg.GeneratePhotonUV(2,x=wbox.X()/2,y=wbox.Y()/2,z=wbox.Z()/2)
-		#htau2.Fill(uvp.T0()/ns)
+		
 		th.FillH1("htau2",uvp.T0()/ns)
 		uvp = pg.GeneratePhotonUV(3,x=wbox.X()/2,y=wbox.Y()/2,z=wbox.Z()/2)
-		#htau3.Fill(uvp.T0()/ns)
+		#
 		th.FillH1("htau3",uvp.T0()/ns)
 		bp = pg.GeneratePhotonWLS(x=wbox.X()/2,y=wbox.Y()/2,z=wbox.Z()/2)
 		th.FillH1("htauWLS",bp.T0()/ns)
-		#htauWLS.Fill(bp.T0()/ns)
+		
 
 	th.DrawList(["htau1","htau2","htau3","htauWLS"],xd=2,yd=2)
-
-	# c1.Divide(2,2)
-	# c1.cd(1)
-	# gPad.SetLogy()
-	# htau1.Draw()
-	
-	# c1.cd(2)
-	# gPad.SetLogy()
-	# htau2.Draw()
-
-	# c1.cd(3)
-	# gPad.SetLogy()
-	# htau3.Draw()
-
-	# c1.cd(4)
-	# gPad.SetLogy()
-	# htauWLS.Draw()
-
-	# c1.Show()
-	# wait()
 
 
 

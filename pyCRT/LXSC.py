@@ -430,6 +430,18 @@ class LXSC:
 
       return int(nsipm)
 
+    def NX(self):
+      n = self.Box().X()/self.SensorPitch()
+      return (int)(n)
+
+    def NY(self):
+      n = self.Box().Y()/self.SensorPitch()
+      return (int)(n)
+  
+    def Nz(self):
+      n = self.Box().Z()/self.SensorPitch()
+      return (int)(n)
+
     def CostOfSiPM(self):
       return float(self.NumberOfSiPM()*self.Sensor().Cost())
 

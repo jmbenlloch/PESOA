@@ -1,3 +1,61 @@
+
+def Trigger(self):
+		"""
+		Trigger the event 
+		"""
+
+		# #print "trigger"
+		# ttr = -999
+		
+		# for ibin in range(NBINS):
+		# 	pes = self.hsper.GetBinContent(ibin)
+		# 	time = self.hsper.GetBinCenter(ibin)
+		# 	#print "time (ps) pes =", time,pes
+		# 	if pes > self.tLevel:
+		# 		ttr = time
+		# 		break
+
+		# print "trigger time1 =",ttr
+		# #wait()
+		# hCTR1.Fill(ttr)
+
+		# ttr = -999
+		
+		# if DEBUG > 1:
+		# 	print self.STIME
+		# 	print self.SPER
+
+		# for ibin in xrange(len(self.STIME)):
+		# 	time = self.STIME[ibin]
+		# 	pes = self.SPER[ibin]
+		# 	if DEBUG > 1:
+		# 		print "time (ps) pes =", time,pes
+
+		# 	if pes > self.tLevel:
+		# 		ttr = time
+		# 		break
+
+		# if DEBUG > 0:
+		# 	print "trigger time2 ps =",ttr
+		# 	wait()
+	
+		# hCTR2.Fill(ttr)
+
+# stime =[]
+
+		# for tt in drange(0.,TAUMAX,TBINS):
+		# 	stime.append(tt/ps)
+
+		# self.STIME = np.array(stime)
+
+#self.hsper = TH1F("hsper", "spe(au)", NBINS, 0.,(TAUMAX/ps))
+
+		# if DEBUG > 0:
+		# 	self.hSPER = TH1F("hSPER", "spe(au)", NBINS, 0.,(TAUMAX/ps))
+		# 	self.c2 = TCanvas( 'c2', 'SPER', 200, 10, 600, 800 )
+
+		# self.SPER = np.zeros(len(self.STIME))
+
 # xx = -9999
 		# yy = -9999
 		# zz = -9999

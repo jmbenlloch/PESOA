@@ -3,9 +3,9 @@ Module THisto
 """
 import numpy as np
 import sys
-from ROOT import TF1, TH1F, TH2F,TH3F
+from ROOT import TF1, TH1F, TH2F,TH3F, TFile
 from ROOT import TCanvas, TPad, TPaveLabel, TPaveText, TColor
-from ROOT import gROOT, gStyle, gRandom
+from ROOT import gROOT, gStyle, gRandom, gPad
 gStyle.SetOptStat(1);
 gStyle.SetPalette(1);
 gStyle.SetCanvasColor(33);
@@ -62,7 +62,7 @@ class THisto(object):
         self.__DrawHistos(Histos,1,1)
 
 
-    def DrawList(self,histoList,xd=1,yd=1):
+    def DrawList(self,histoList,xd=1,yd=1,xscale="lin",yscale="lin"):
         """
         Draws histos 
         """
@@ -77,10 +77,10 @@ class THisto(object):
                 print "histo name ={0} not found".format(name)
                 sys.exit(-1)
 
-        self.__DrawHistos(Histos,xd,yd)
+        self.__DrawHistos(Histos,xd,yd,xscale,yscale)
 
 
-    def __DrawHistos(self,Histos,xd,yd):
+    def __DrawHistos(self,Histos,xd,yd,xscale,yscale):
 
         c1 = TCanvas( 'c1', 'Histograms', 200, 10, 600, 800 )
 
@@ -95,6 +95,16 @@ class THisto(object):
         
         for i in range (1,l+1):
             c1.cd(i)
+            if xscale == "log": 
+                gPad.SetLogx(1)
+            else: 
+                gPad.SetLogx(0)
+
+            if yscale == "log": 
+                gPad.SetLogy(1)
+            else: 
+                gPad.SetLogy(0)
+
             Histos[i-1].Draw()
         
 
