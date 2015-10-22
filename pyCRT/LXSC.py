@@ -485,11 +485,12 @@ class LXSC:
 if __name__ == '__main__':
     
     lxe = LXe()
-    box = Box(25*mm,25*mm,30*mm)
+    box = Box(50*mm,50*mm,50*mm)
     tpb = WLS()
     plxsc = PLXSC()
-    sipm = SiPM()
-    lxsc = LXSC(lxe,box,tpb,plxsc,sipm,6.2*mm,[1,0,0])
+    sipm = SiPM(cost=10*euro,
+               activeSize=3*mm,sensorSize=3.1*mm)
+    lxsc = LXSC(lxe,box,tpb,plxsc,sipm,4.0*mm,[1,0,0])
     
     print lxsc
     
