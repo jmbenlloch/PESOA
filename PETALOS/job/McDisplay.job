@@ -1,0 +1,75 @@
+#####     ------ Parameter File -----       ###
+#                                             #  
+#   use:                                      #
+#                                             #
+#     GROUP NAME TYPE VALUE                   #
+#                                             #
+#     where TYPE is:                          #
+#                                             #
+#          I  --> INTEGER,                    #
+#          D  --> FLOAT                       #
+#          S  --> STRING                      #
+#          IV --> INTEGER VECTOR              #
+#          DV --> FLOAT VECTOR                #
+#          SV --> STRING VECTOR               #
+#                                             #
+#     For vectors:  TYPE == vector length     #
+#     Each element is decleared in new line   #
+#                                             #
+###############################################
+
+#--------- PATHS with modules to be used -------#
+#CNTJob PATHS SV 1
+#./../algos/
+
+############################ VERBOSITY LEVEL ##########################
+#---------- VERBOSITY LEVEL ----------#
+CNTJob LEVEL I 4
+
+#---------------  C++ libraries ----------------#
+CNTJob LIBS SV 1
+/Users/jjgomezcadenas/Development/PETALO/INSTALL/lib/libMCDisplay.dylib
+
+#--------- DATA -------#
+CNTJob INPUT_DATA SV 1
+/Users/jjgomezcadenas/Development/PETALO/DATA/tof.conf1.next
+
+#--------- DATA READER -------#
+CNTJob READER S gateReader
+
+#--------- OUPUT DATA FORMAT -------#
+CNTJob WRITER S gateWriter
+
+#------------- log file -------------#
+CNTJob LOG I 0
+CNTJob FLOG S MCDisplay.log
+
+#---------- histogram file ----------#
+CNTJob HISTOS 1
+CNTJob FHISTOS S MCDisplay_histos.root
+
+#---------- histogram file ----------#
+CNTJob TREES 0
+CNTJob FTREES S MCDisplay_trees.root
+
+#------ SAVE EVENTS IN OUTPUT FILE ----------# 
+CNTJob SAVE I 0
+
+#---------- NUMBER OF EVENTS TO ANALYZE ----------#
+CNTJob NEVENTS I 10
+
+#---------- FIRST EVENT TO ANALYZE ----------#
+CNTJob FEVENT I 0
+
+#---------- Print status messages after NDEBUG events ----------#
+CNTJob NDEBUG I 100
+
+
+#--------- ALGORITHMS -------#
+CNTJob ALGOS SV 1
+MCDisplay
+
+
+#--------- C++Algo PARAMS -------#
+MCDisplay LAN S c++
+MCDisplay VLEVEL I 4
