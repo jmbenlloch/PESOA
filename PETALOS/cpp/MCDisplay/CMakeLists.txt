@@ -6,6 +6,13 @@ MESSAGE("Entering MCDisplay directory, SRC=${SRC}")
 
 INCLUDE_DIRECTORIES(${SRC})
 
+
+MESSAGE("Creating MCDisplay library")
+FILE(GLOB algo_src . ${SRC}/*.cc)
+
+
+#SET_TARGET_PROPERTIES(MCDisplay PROPERTIES VERSION 1.1.0 SOVERSION 1)
+
 set(MCDisplay_DICTIONARY ${CMAKE_BINARY_DIR}/MCDisplay/MCDisplayDict.cxx)  # set dictionary
 
 MESSAGE("Generate MCDisplay dictionary = ${MCDisplay_DICTIONARY}")
@@ -23,13 +30,7 @@ ROOT_GENERATE_DICTIONARY(
            "${SRC}/LinkDef.hh"   # ROOT linkDef file
          )
 
-
-MESSAGE("Creating MCDisplay library")
-FILE(GLOB algo_src . ${SRC}/*.cc)
-
 ADD_LIBRARY(MCDisplay SHARED ${algo_src} ${MCDisplay_DICTIONARY})
-
-#SET_TARGET_PROPERTIES(MCDisplay PROPERTIES VERSION 1.1.0 SOVERSION 1)
 TARGET_LINK_LIBRARIES(MCDisplay ${ROOT_LIBRARIES} ${GATE_LIBRARIES})
 
 

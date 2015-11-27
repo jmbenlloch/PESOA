@@ -28,18 +28,26 @@ class MCDisplay : public gate::IAlgo {
   //! finalize algorithm
   bool finalize();     
 
+  // load geometry
+  void LoadGeometry(const gate::ParamStore& gs,
+         gate::VLEVEL=gate::NORMAL,
+         std::string label="MCDisplayInstance");
+
   //! display event information
-  void EventInfo(const gate::Event& event, ostream& s);
-  void SensorHitInfo(const gate::Hit& hit, ostream& s);
-  void TrueHitInfo(const gate::MCHit& hit, ostream& s);
-  void ParticleInfo(const gate::MCParticle& hit, ostream& s);
+  void EventInfo(const gate::Event& event);
+  std::string SensorHitInfo(const gate::Hit& hit);
+  std::string TrueHitInfo(const gate::MCHit& hit);
+  std::string ParticleInfo(const gate::MCParticle& hit);
 
   // temporary 
   std::string GetParticleName(int pdg);
   double GetParticleMass(int pdg);
   double GetParticleCharge(int pdg);
+  void Wait();
   
  private:
+  std::vector<std::vector<double>> fCoordBox1; // coordinates of Box1
+  std::vector<std::vector<double>> fCoordBox2; // coordinates of Box2
   
   ClassDef(MCDisplay,0)
     

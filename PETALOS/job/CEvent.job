@@ -19,20 +19,16 @@
 ###############################################
 
 #--------- PATHS with modules to be used -------#
-#CNTJob PATHS SV 1
-#./../algos/
+CNTJob PATHS SV 1
+/Users/jjgomezcadenas/Development/PETALO/PESOA/PETALOS/py/ClassifyEvent
 
 ############################ VERBOSITY LEVEL ##########################
 #---------- VERBOSITY LEVEL ----------#
 CNTJob LEVEL I 4
 
-#---------------  C++ libraries ----------------#
-CNTJob LIBS SV 1
-/Users/jjgomezcadenas/Development/PETALO/INSTALL/lib/libMCDisplay.dylib
-
 #--------- DATA -------#
 CNTJob INPUT_DATA SV 1
-/Users/jjgomezcadenas/Development/PETALO/DATA/tof.conf1.next
+/Users/jjgomezcadenas/Development/PETALO/DATA/petalo.6_64.000.next
 
 #--------- DATA READER -------#
 CNTJob READER S gateReader
@@ -42,21 +38,21 @@ CNTJob WRITER S gateWriter
 
 #------------- log file -------------#
 CNTJob LOG I 0
-CNTJob FLOG S MCDisplay.log
+CNTJob FLOG S CEvent.log
 
 #---------- histogram file ----------#
 CNTJob HISTOS 1
-CNTJob FHISTOS S MCDisplay_histos.root
+CNTJob FHISTOS S CEvent_histos.root
 
 #---------- histogram file ----------#
 CNTJob TREES 0
-CNTJob FTREES S MCDisplay_trees.root
+CNTJob FTREES S CEvent_trees.root
 
 #------ SAVE EVENTS IN OUTPUT FILE ----------# 
 CNTJob SAVE I 0
 
 #---------- NUMBER OF EVENTS TO ANALYZE ----------#
-CNTJob NEVENTS I 10
+CNTJob NEVENTS I 100
 
 #---------- FIRST EVENT TO ANALYZE ----------#
 CNTJob FEVENT I 0
@@ -67,74 +63,41 @@ CNTJob NDEBUG I 100
 
 #--------- ALGORITHMS -------#
 CNTJob ALGOS SV 1
-MCDisplay
+CEvent
 
 
-#--------- C++Algo PARAMS -------#
-MCDisplay LAN S c++
-MCDisplay VLEVEL I 4
+#--------- Algo PARAMS -------#
+CEvent VLEVEL I 4
 
-MCDisplay Box1V1 DV 3 
+CEvent BoxV1 DV 3 
 -12.8 
 -12.8 
 -130.
-MCDisplay Box1V2 DV 3 
+CEvent BoxV2 DV 3 
 -12.8 
 12.8 
 -130.
-MCDisplay Box1V3 DV 3 
+CEvent BoxV3 DV 3 
 12.8 
 -12.8 
 -130
-MCDisplay Box1V4 DV 3 
+CEvent BoxV4 DV 3 
 12.8 
 12.8 
 -130
-MCDisplay Box1V5 DV 3 
+CEvent BoxV5 DV 3 
 -12.8 
 -12.8 
 -100
-MCDisplay Box1V6 DV 3 
+CEvent BoxV6 DV 3 
 -12.8 
 12.8 
 -100
-MCDisplay Box1V7 DV 3 
+CEvent BoxV7 DV 3 
 12.8 
 -12.8 
 -100
-MCDisplay Box1V8 DV 3 
+CEvent BoxV8 DV 3 
 12.8 
 12.8 
 -100
-MCDisplay Box2V1 DV 3 
--12.8 
--12.8 
-100
-MCDisplay Box2V2 DV 3 
--12.8 
-12.8 
-100
-MCDisplay Box2V3 DV 3 
-12.8 
--12.8 
-100
-MCDisplay Box2V4 DV 3 
-12.8 
-12.8 
-100
-MCDisplay Box2V5 DV 3 
--12.8 
--12.8 
-130.
-MCDisplay Box2V6 DV 3 
--12.8
-12.8 
-130. 
-MCDisplay Box2V7 DV 3 
-12.8 
--12.8 
-130.
-MCDisplay Box2V8 DV 3 
-12.8 
-12.8 
-130.
