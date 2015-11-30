@@ -46,6 +46,17 @@ def particleEnergy(particle):
 	return (particle.GetInitialMom().GetE(), particle.GetFinalMom().GetE())
 
 ############################################################
+def particleInitialMomentum(particle):
+	return (particle.GetInitialMom().x(), 
+		particle.GetInitialMom().y(),
+		particle.GetInitialMom().z())
+############################################################	
+def particleFinalMomentum(particle):
+	return (particle.GetFinalMom().x(), 
+		particle.GetFinalMom().y(),
+		particle.GetFinalMom().z())
+
+############################################################
 def particleKineticEnergy(particle):
 	# print "particle energy =",particleEnergy(particle)
 	# print "particle mass =",particleMass(particle)

@@ -24,11 +24,11 @@ CNTJob PATHS SV 1
 
 ############################ VERBOSITY LEVEL ##########################
 #---------- VERBOSITY LEVEL ----------#
-CNTJob LEVEL I 3
+CNTJob LEVEL I 1
 
 #--------- DATA -------#
 CNTJob INPUT_DATA SV 1
-/Users/jjgomezcadenas/Development/PETALO/DATA/tof.conf1.next
+/Users/jjgomezcadenas/Development/PETALO/DATA/tof_noCompt_refl_VUV3mm.next
 
 #--------- DATA READER -------#
 CNTJob READER S gateReader
@@ -52,13 +52,13 @@ CNTJob FTREES S CEvent_trees.root
 CNTJob SAVE I 0
 
 #---------- NUMBER OF EVENTS TO ANALYZE ----------#
-CNTJob NEVENTS I 1000
+CNTJob NEVENTS I 10000
 
 #---------- FIRST EVENT TO ANALYZE ----------#
 CNTJob FEVENT I 0
 
 #---------- Print status messages after NDEBUG events ----------#
-CNTJob NDEBUG I 1000
+CNTJob NDEBUG I 100
 
 
 #--------- ALGORITHMS -------#
@@ -67,40 +67,42 @@ CEvent
 
 
 #--------- Algo PARAMS -------#
-CEvent VLEVEL I 4
+CEvent VLEVEL I 1
+
+CEvent Debug I 0
 
 CEvent Box1V1 DV 3 
 -12.8 
 -12.8 
--130.
+-100.
 CEvent Box1V2 DV 3 
 -12.8 
 12.8 
--130.
+-100.
 CEvent Box1V3 DV 3 
 12.8 
 -12.8 
--130
+-100
 CEvent Box1V4 DV 3 
 12.8 
 12.8 
--130
+-100
 CEvent Box1V5 DV 3 
 -12.8 
 -12.8 
--100
+-130
 CEvent Box1V6 DV 3 
 -12.8 
 12.8 
--100
+-130
 CEvent Box1V7 DV 3 
 12.8 
 -12.8 
--100
+-130
 CEvent Box1V8 DV 3 
 12.8 
 12.8 
--100
+-130
 CEvent Box2V1 DV 3 
 -12.8 
 -12.8 

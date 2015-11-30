@@ -3,6 +3,7 @@ from Centella.physical_constants import *
 from Particles import *
 from Util import *
 from Geometry import *
+from LXe import *
 
 """
 This algorithm classifies the interactions in the box(es) 
@@ -32,7 +33,7 @@ class CEvent(AAlgo):
     # Box coordinates
 
   		#print self.vdoubles
-
+  		self.debug = self.ints["Debug"]
   		boxCoord1 =self.loadCoord("Box1V")
   		boxCoord2 =self.loadCoord("Box2V")
 
@@ -42,7 +43,11 @@ class CEvent(AAlgo):
 		self.m.log(2, "Box1 --", self.box1)
 		self.m.log(2, "Box2 ---", self.box2)
 
-		#wait()
+		self.lxe = LXe() #lxe properties
+		print self.lxe
+
+		if self.debug == 1:
+			wait()
    
 
 	############################################################		
@@ -122,6 +127,16 @@ class CEvent(AAlgo):
 			self.XYZBox1_histo_name).GetXaxis().SetTitle(
 			"XYZ interaction box 1 (mm)")
 
+		self.XYBox1_histo_desc = "XYBox1"
+		self.XYBox1_histo_name = self.alabel(self.XYBox1_histo_desc)
+		self.hman.h2(self.XYBox1_histo_name, self.XYBox1_histo_desc, 
+			25, self.box1.xmin, self.box1.xmax,
+           	25, self.box1.ymin, self.box1.ymax)
+           	
+		self.hman.fetch(
+			self.XYBox1_histo_name).GetXaxis().SetTitle(
+			"XY interaction box 1 (mm)")
+
 
 		self.XYZBox2_histo_desc = "XYZBox2"
 		self.XYZBox2_histo_name = self.alabel(self.XYZBox2_histo_desc)
@@ -132,6 +147,16 @@ class CEvent(AAlgo):
 		self.hman.fetch(
 			self.XYZBox2_histo_name).GetXaxis().SetTitle(
 			"XYZ interaction box 2 (mm)")
+
+		self.XYBox2_histo_desc = "XYBox2"
+		self.XYBox2_histo_name = self.alabel(self.XYBox2_histo_desc)
+		self.hman.h2(self.XYBox2_histo_name, self.XYBox2_histo_desc, 
+			25, self.box2.xmin, self.box2.xmax,
+           	25, self.box2.ymin, self.box2.ymax)
+           	
+		self.hman.fetch(
+			self.XYBox2_histo_name).GetXaxis().SetTitle(
+			"XY interaction box 2 (mm)")
 
     ### Counters:
 		self.numInputEvents = 0
@@ -168,29 +193,76 @@ class CEvent(AAlgo):
 		interactionType = "none"
 
 		for pparticle in primaryParticles:
-			self.m.log(3, ' +++primary particle+++')
-			self.particleInfo(3,pparticle)
+			self.m.log(3, '\n+++primary particle+++\n')
 			ei,ef = particleEnergy(pparticle)
+
+			self.m.log(3,'name = %s t =%7.2f ns E = %7.2f keV'%(
+			particleName(pparticle), particleTime(pparticle)/ns,ei/keV))
 
 			if ei/keV != 511 : #loop over high energy gamma
 				continue 
 
-			box,x,y,z = self.primaryParticleFiducial(pparticle)
-			if box == 1: 
-				self.ngbox1+=1
-			elif box == 2: 
-				self.ngbox2+=1
-			else:
-				self.ngbox0+=1
-				npb0+=1
+			self.particleInfo(4,pparticle)
 
-			if box == 1:
+			x0,y0,z0 = particleInitialVtx(pparticle)
+			px,py,pz = particleInitialMomentum(pparticle)
+
+			self.m.log(3, ' x0 =%7.2f mm, y0 =%7.2f mm, z0 =%7.2f mm '%(
+			x0/mm,y0/mm,z0/mm))
+		
+			self.m.log(3, ' px =%7.2f keV, py =%7.2f keV, z =%7.2f keV '%(
+			px/keV,py/keV,pz/keV))
+
+			xb = 1e+9
+			yb = 1e+9
+			zb = 1e+9
+			if pz < 0:
+				self.m.log(3,' ++Extrapolate to box 1: z =%7.2f'%self.box1.zmin)
+				zb = self.box1.zmin
+				xb,yb = extrapToZ(zb,(x0,y0,z0),(px,py,pz))
+
+				self.m.log(3, ' xb =%7.2f mm, yb =%7.2f mm, zb =%7.2f mm '%(
+					xb/mm,yb/mm,zb/mm))
+
+				path = pathInBox((xb,yb,zb),(px,py,pz),self.box1)
+				
+			else:
+				self.m.log(3,' ++Extrapolate to box 2: z =%7.2f'%self.box2.zmin)
+				zb = self.box2.zmin
+				xb,yb = extrapToZ(zb,(x0,y0,z0),(px,py,pz))
+
+				self.m.log(3, ' xb =%7.2f mm, yb =%7.2f mm, zb =%7.2f mm '%(
+					xb/mm,yb/mm,zb/mm))
+
+				path = pathInBox((xb,yb,zb),(px,py,pz),self.box2)
+
+
+			self.m.log(3,'Prob of int for (Ei =%7.2f keV, path =%7.2f mm) = %7.2f'%(
+				ei/keV,path/mm,self.lxe.Efficiency(ei,path)))
+
+			#has the particle interacted in the box?
+
+			x,y,z = particleFinalVtx(pparticle)
+			self.m.log(3, ' Final vertex: x =%7.2f mm, y =%7.2f mm, z =%7.2f mm '%(
+			x/mm,y/mm,z/mm))
+
+			boxFound =0
+			if self.box1.Active((x,y,z)) == True:
+				self.m.log(3,'gamma found in box1')
+				
+				self.ngbox1+=1
 				self.hman.fill(self.XYZBox1_histo_name, 
 					x/mm,y/mm,z/mm)
-			elif box == 2:
+			
+			elif self.box2.Active((x,y,z)) == True:
+				self.m.log(3,'gamma found in box2')
+				
+				self.ngbox2+=1
 				self.hman.fill(self.XYZBox2_histo_name, 
 					x/mm,y/mm,z/mm)
 			else:
+				self.m.log(3,'gamma not found in box1 or in box2')
+				npb0+=1
 				continue
 
 			secondaryParticles = SecondaryParticles(pparticle)
@@ -231,10 +303,11 @@ class CEvent(AAlgo):
 		self.m.log(2, ' number of gammas that do photoelectric =%d  '%(npe))
 		self.m.log(2, ' number of gammas that do compton =%d  '%(nco))
 		
-		#wait()
+		if self.debug == 2: 
+			wait()
 		if npb0 ==0 and npe == 2: # both gammas interact and are photo
-			return True
 			self.numOutputEvents += 1
+			return True
 		else:
 			return False
 
@@ -260,13 +333,10 @@ class CEvent(AAlgo):
 	############################################################
 	def particleInfo(self, lvl, particle):
 		self.m.log(lvl,' ++ParticleInfo++')
-		self.m.log(lvl,'name = %s t =%7.2f ns '%(
-			particleName(particle), particleTime(particle)/ns))
 		
-		ei,ef = particleEnergy(particle)
 		ti,tf = particleKineticEnergy(particle)
-		self.m.log(lvl,'Ei = %7.2f keV ef = %7.2f keV Ti = %7.2f keV Tf= %7.2f keV '%(
-			ei/keV,ef/keV,ti/keV,tf/keV)) 
+		self.m.log(lvl,'Ti = %7.2f keV Tf= %7.2f keV '%(
+			ti/keV,tf/keV)) 
 
 		x,y,z = particleInitialVtx(particle)
 		self.m.log(lvl, ' Initial vertex: x =%7.2f mm, y =%7.2f mm, z =%7.2f mm '%(
@@ -275,29 +345,15 @@ class CEvent(AAlgo):
 		self.m.log(lvl, ' Final vertex: x =%7.2f mm, y =%7.2f mm, z =%7.2f mm '%(
 			x/mm,y/mm,z/mm))
 
-	############################################################
-	def primaryParticleFiducial(self, particle):
+		px,py,pz = particleInitialMomentum(particle)
+		self.m.log(lvl, ' Initial momentum: px =%7.2f keV, py =%7.2f keV, z =%7.2f keV '%(
+			px/keV,py/keV,pz/keV))
 
-		self.m.log(3,' ++primaryParticleFiducial++')
-		x,y,z = particleFinalVtx(particle)
-		self.m.log(3, ' Final vertex: x =%7.2f mm, y =%7.2f mm, z =%7.2f mm '%(
-			x/mm,y/mm,z/mm))
+		px,py,pz = particleFinalMomentum(particle)
+		self.m.log(lvl, ' Final momentum: px =%7.2f keV, py =%7.2f keV, z =%7.2f keV '%(
+			px/keV,py/keV,pz/keV))
 
-		box = 0 # by default out of box1 and box2
-		fid = self.box1.Active([x,y,z])
-		if fid:
-			self.m.log(3,'gamma found in box1')
-			box = 1
-		else:
-			fid = self.box2.Active([x,y,z])
-			if fid:
-				self.m.log(3,'gamma found in box2')
-				box = 2
-
-		if box == 0:
-			self.m.log(3,'gamma not found in box1 and in box2')
-
-		return (box,x,y,z)
+	
 
 	############################################################
 	def loadCoord(self, blb):
