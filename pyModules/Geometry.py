@@ -112,9 +112,9 @@ class Box(XYZBox):
 
     x,y,z = coord
     box = False
-    if x > self.xmin and x < self.xmax:
-      if y > self.ymin and y < self.ymax:
-        if abs(z) > abs(self.zmin) and abs(z) < abs(self.zmax):
+    if x >= self.xmin and x <= self.xmax:
+      if y >= self.ymin and y <= self.ymax:
+        if abs(z) >= abs(self.zmin) and abs(z) <= abs(self.zmax):
           box = True
     
     return box
@@ -216,13 +216,18 @@ def pathInBox((x0,y0,z0), (px,py,pz), box):
     return d
 
 ###########################################################
-def propagateInBox((x0,y0,z0), (px,py,pz), path):
+def propagateInBox((x0,y0,z0), (px,py,pz), d):
     """
-    Given a photon with entry point (x0,y0,z0) a momentum (px,py,pz)
-    and a path, propagate the photon in steps of 1 mm along path and
-    decide if a photoelectric interaction can take place 
+    Given a photon with entry point (x0,y0,z0),normalized momentum (px,py,pz)
+    propagate the photon to distance d inside the box 
     """
+    x = x0 + px*d
+    y = y0 + py*d
+    z = z0 + pz*d
+
+    return (x,y,z)
        
+
     
 
 ###########################################################
