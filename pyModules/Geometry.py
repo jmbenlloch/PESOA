@@ -211,7 +211,18 @@ def pathInBox((x0,y0,z0), (px,py,pz), box):
     d5 = distance((x,y,z),(x0,y0,z0))
 
 
-    return min(d1,d2,d3,d4,d5)
+    d = min(d1,d2,d3,d4,d5)
+
+    return d
+
+###########################################################
+def propagateInBox((x0,y0,z0), (px,py,pz), path):
+    """
+    Given a photon with entry point (x0,y0,z0) a momentum (px,py,pz)
+    and a path, propagate the photon in steps of 1 mm along path and
+    decide if a photoelectric interaction can take place 
+    """
+       
     
 
 ###########################################################

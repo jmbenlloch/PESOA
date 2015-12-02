@@ -6,12 +6,8 @@ from Geometry import *
 from LXe import *
 
 """
-This algorithm classifies the interactions in the box(es) 
-according to the following types:
-i) Photoelectric
-ii) Compton
-Parameters:
-   box coordinates
+This algorithm classifies and filter the interactions passing only events 
+where both photons interact in the boxes photoelectrically. 
 """
 
 class CEvent(AAlgo):
