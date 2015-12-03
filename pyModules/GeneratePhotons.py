@@ -51,6 +51,7 @@ BOX2 =[
 ]
 EPHOT = 511*keV
 STEP = 1*mm
+NR = 1.55 #(refraction index for 172 nm)
 
 class PhotonGenerator:
 	def __init__(self,box1,box2,level):
@@ -130,6 +131,13 @@ class PhotonGenerator:
 					x2/mm,y2/mm,z2/mm))
 			return False
 
+		#compute gammas time
+		d1 = distance((x1,y1,z1),(0,0,0))
+		d2 = distance((x2,y2,z2),(0,0,0))
+
+		t1 = d1/c_light
+		t2 = d2/c_light
+
 		#compute path in box1 and in box2
 
 		path1 = pathInBox((x1,y1,z1),(P1[0],P1[1],P1[2]),
@@ -195,8 +203,19 @@ class PhotonGenerator:
 		self.m.log(2, 'xi2 =%7.2f mm, yi2 =%7.2f mm, zi2 =%7.2f mm '%(
 					xi2/mm,yi2/mm,zi2/mm))
 
-		self.X1 = [xi1,yi1,zi1]
-		self.X2 = [xi2,yi2,zi2]
+		#gamma times
+
+		d1 = distance((xi1,yi1,zi1),(x1,y1,z1))
+		d2 = distance((xi2,yi2,zi2),(x2,y2,z2))
+
+		t1 += d1*NR/c_light
+		t2 += d2*NR/c_light
+
+		self.m.log(2, 't1 =%7.2f ps, t2 =%7.2f ps '%(
+					t1/ps,t2/ps))
+
+		self.X1 = [xi1,yi1,zi1,t1]
+		self.X2 = [xi2,yi2,zi2,t2]
 		return True
 		
 
@@ -273,6 +292,11 @@ def Histograms(hman,box1,box2):
 	hman.fetch("ZBox1").GetXaxis().SetTitle(
 		"Z interaction box 1 (mm)")
 
+	hman.h1("TBox1", "TBox1", 
+		100, 300, 900.)
+	hman.fetch("TBox1").GetXaxis().SetTitle(
+		"Time interaction box 1 (ps)")
+
 	hman.h3("XYZBox2", "XYZBox2", 
 		10, box2.xmin, box2.xmax,
 		10, box2.ymin, box2.ymax,
@@ -301,10 +325,30 @@ def Histograms(hman,box1,box2):
 	hman.fetch("ZBox2").GetXaxis().SetTitle(
 		"Z interaction box 1 (mm)")
 
+	hman.h1("TBox2", "TBox2", 
+		100, 300, 900.)
+	hman.fetch("TBox2").GetXaxis().SetTitle(
+		"Time interaction box 2 (ps)")
+
+	hman.h2("TBox12", "TBox12", 
+		25, 300, 900,
+		25, 300, 900)
+	hman.fetch("TBox12").GetXaxis().SetTitle(
+		"Time interaction box1-box2 (ps)")
+
+	hman.h1("TDiffBox12", "TDiffBox12", 
+		100, -300, 300.)
+	hman.fetch("TDiffBox12").GetXaxis().SetTitle(
+		"Time Diff interaction box 1-2 (ps)")
+
 
 
 if __name__ == '__main__':
+
+	nevents = 1000000
+	nprint = 1000
 	m = Messenger(0)
+
 	hman =HistoManager() 
 	tman =TreeManager() 
 
@@ -315,18 +359,22 @@ if __name__ == '__main__':
 	px1 = array.array('f',[0.])
 	py1 = array.array('f',[0.])
 	pz1 = array.array('f',[0.])
+	pt1 = array.array('f',[0.])
 	px2 = array.array('f',[0.])
 	py2 = array.array('f',[0.])
 	pz2 = array.array('f',[0.])
+	pt2 = array.array('f',[0.])
 	
 
 	tman.book('tpg',"photon generator tree")
 	tman.addBranch('tpg','px1',px1,dim=1)
 	tman.addBranch('tpg','py1',py1,dim=1)
 	tman.addBranch('tpg','pz1',pz1,dim=1)
+	tman.addBranch('tpg','pt1',pt1,dim=1)
 	tman.addBranch('tpg','px2',px2,dim=1)
 	tman.addBranch('tpg','py2',py2,dim=1)
 	tman.addBranch('tpg','pz2',pz2,dim=1)
+	tman.addBranch('tpg','pt2',pt2,dim=1)
 	
 		
 	pg = PhotonGenerator(box1,box2,0)
@@ -334,8 +382,7 @@ if __name__ == '__main__':
 
 	nfail = 0
 	nOK = 0
-	nevents = 1000000
-	nprint = 1000
+	
 	for event in range(0,nevents):
 		if event%nprint == 0:
 			print 'event ', event
@@ -344,34 +391,44 @@ if __name__ == '__main__':
 			nfail+=1
 			continue
 		nOK+=1
-		x1,y1,z1 = pg.X1
-		x2,y2,z2 = pg.X2
+		x1,y1,z1,t1 = pg.X1
+		x2,y2,z2,t2 = pg.X2
 
-		m.log(1, ' event =%d x1 =%7.2f mm, y1 =%7.2f mm, z1 =%7.2f mm '%(
+		m.log(1, 'event =%d x1 =%7.2f mm, y1 =%7.2f mm, z1 =%7.2f mm'%(
 					event,x1/mm,y1/mm,z1/mm))
 
-		m.log(1, 'event =%d x2 =%7.2f mm, y2 =%7.2f mm, z2 =%7.2f mm '%(
+		m.log(1, 'event =%d x2 =%7.2f mm, y2 =%7.2f mm, z2 =%7.2f mm'%(
 					event,x2/mm,y2/mm,z2/mm))
+
+		m.log(1, 'event =%d t1 =%7.2f ns, t2 =%7.2f ns dt = %7.2g ps'%(
+			event,t1/ps,t2/ps, abs(t1-t2)/ps))
 
 		hman.fill("XYZBox1", x1/mm,y1/mm,z1/mm)
 		hman.fill("XYBox1", x1/mm,y1/mm)
 		hman.fill("XBox1", x1/mm)
 		hman.fill("YBox1", y1/mm)
 		hman.fill("ZBox1", abs(z1)/mm)
+		hman.fill("TBox1", t1/ps)
 
 		hman.fill("XYZBox2", x2/mm,y2/mm,z2/mm)
 		hman.fill("XYBox2", x2/mm,y2/mm)
 		hman.fill("XBox2", x2/mm)
 		hman.fill("YBox2", y2/mm)
 		hman.fill("ZBox2", abs(z2)/mm)
+		hman.fill("TBox2", t2/ps)
+
+		hman.fill("TBox12", t1/ps,t2/ps)
+		hman.fill("TDiffBox12", (t1-t2)/ps)
 
 		px1[0]=x1
 		py1[0]=y1
 		pz1[0]=z1
+		pt1[0]=t1
 
 		px2[0]=x2
 		py2[0]=y2
 		pz2[0]=z2
+		pt2[0]=t2
 
 		tman.fill('tpg')
 
