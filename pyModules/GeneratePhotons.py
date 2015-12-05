@@ -208,8 +208,8 @@ class PhotonGenerator:
 		d1 = distance((xi1,yi1,zi1),(x1,y1,z1))
 		d2 = distance((xi2,yi2,zi2),(x2,y2,z2))
 
-		t1 += d1*NR/c_light
-		t2 += d2*NR/c_light
+		t1 += d1/c_light
+		t2 += d2/c_light
 
 		self.m.log(2, 't1 =%7.2f ps, t2 =%7.2f ps '%(
 					t1/ps,t2/ps))
@@ -345,7 +345,7 @@ def Histograms(hman,box1,box2):
 
 if __name__ == '__main__':
 
-	nevents = 1000000
+	nevents = 10000
 	nprint = 1000
 	m = Messenger(0)
 

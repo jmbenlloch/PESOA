@@ -174,7 +174,6 @@ class CEvent(AAlgo):
 	
 		self.numInputEvents += 1   
 
-		evtEnergy = event.GetEnergy()
 		numberOfParticles = event.GetMCParticles().size()
 
 		self.m.log(3, ' number of particles = %d '%(numberOfParticles))
@@ -209,32 +208,6 @@ class CEvent(AAlgo):
 			self.m.log(3, ' px =%7.2f keV, py =%7.2f keV, z =%7.2f keV '%(
 			px/keV,py/keV,pz/keV))
 
-			xb = 1e+9
-			yb = 1e+9
-			zb = 1e+9
-			if pz < 0:
-				self.m.log(3,' ++Extrapolate to box 1: z =%7.2f'%self.box1.zmin)
-				zb = self.box1.zmin
-				xb,yb = extrapToZ(zb,(x0,y0,z0),(px,py,pz))
-
-				self.m.log(3, ' xb =%7.2f mm, yb =%7.2f mm, zb =%7.2f mm '%(
-					xb/mm,yb/mm,zb/mm))
-
-				path = pathInBox((xb,yb,zb),(px,py,pz),self.box1)
-				
-			else:
-				self.m.log(3,' ++Extrapolate to box 2: z =%7.2f'%self.box2.zmin)
-				zb = self.box2.zmin
-				xb,yb = extrapToZ(zb,(x0,y0,z0),(px,py,pz))
-
-				self.m.log(3, ' xb =%7.2f mm, yb =%7.2f mm, zb =%7.2f mm '%(
-					xb/mm,yb/mm,zb/mm))
-
-				path = pathInBox((xb,yb,zb),(px,py,pz),self.box2)
-
-
-			self.m.log(3,'Prob of int for (Ei =%7.2f keV, path =%7.2f mm) = %7.2f'%(
-				ei/keV,path/mm,self.lxe.Efficiency(ei,path)))
 
 			#has the particle interacted in the box?
 

@@ -114,11 +114,14 @@ class Box(XYZBox):
     box = False
     if x >= self.xmin and x <= self.xmax:
       if y >= self.ymin and y <= self.ymax:
-        if abs(z) >= abs(self.zmin) and abs(z) <= abs(self.zmax):
-          box = True
+        if z < 0:
+          if z <= self.zmin and z >= self.zmax:
+            box = True
+        else:
+          if z >= self.zmin and z <= self.zmax:
+            box = True
     
     return box
-         
 
   def __str__(self):
        
