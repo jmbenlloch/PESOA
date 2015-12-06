@@ -72,6 +72,14 @@ class CRT(AAlgo):
 		### Defining histos
 		# Event energy histogram
 
+		self.Fiducial_histo_desc = "Fiducial"
+		self.Fiducial_histo_name = self.alabel(self.Fiducial_histo_desc)
+		self.hman.h1(self.Fiducial_histo_name, self.Fiducial_histo_desc, 
+			10, 0, 5)
+		self.hman.fetch(
+			self.Fiducial_histo_name).GetXaxis().SetTitle(
+			"Fiducial interactions")
+
 		self.XYZBox1_histo_desc = "XYZBox1"
 		self.XYZBox1_histo_name = self.alabel(self.XYZBox1_histo_desc)
 		self.hman.h3(self.XYZBox1_histo_name, self.XYZBox1_histo_desc, 
@@ -234,11 +242,115 @@ class CRT(AAlgo):
 		self.m.log(2, 'Execute()')		
 	
 		self.numInputEvents += 1   
+
+		#Fiducial cut. There must be one photon in the fiducial volue
+		#(defined by parameters) in each box. return the interaction vertex
+		#of the photon
+
+		fiducial,self.vertexBox1,self.vertexBox2 = self.Fiducial(event)
+		self.hman.fill(self.Fiducial_histo_name,fiducial)
+
+		if fiducial != 2:
+			return False
+		
+		#Compute a TimeMap including the time-ordered sequence of the
+		#first PE of each SiPM hit
+
+		self.timeMap = self.ComputeTimeMap(event)
+
+		self.m.log(3, " Time maps = %s"%(self.timeMap))
+
+		#Compute DT using the first pe
+
+		self.dt1 = self.DTFirstPe()
+
+		self.m.log(2,"dt =%7.2f ps, "%(self.dt1/ps))
+		self.hman.fill(self.DT_histo_name,self.dt1/ps)
+		
+		if self.debug == 1:
+			wait()	
+
+		self.numOutputEvents += 1
+		return True
+
+############################################################
+	def finalize(self):
+
+		self.m.log(1, 'Finalize()')
+
+		self.m.log(1, 'Input  Events: ', self.numInputEvents)
+		self.m.log(1, 'Output Events: ', self.numOutputEvents)
+		
+
+		self.logman["USER"].ints[self.alabel("InputEvents")] = self.numInputEvents
+		self.logman["USER"].ints[self.alabel("OutputEvents")] = self.numOutputEvents
+		
+
+		return
+###########################################################
+	def DTFirstPe(self):
+		"""
+		Compute DT using the first PE
+		"""
+
+		x1,y1,z1,A1,time1 =self.timeMap.timeHit(boxNumber=1,index=0)
+		x2,y2,z2,A2,time2 =self.timeMap.timeHit(boxNumber=2,index=0)
+
+		self.m.log(2,
+			"timeHit 1:xh =%7.2f mm,yh =%7.2f mm,zh =%7.2f mm, A = %7.2f pes t= %7.2f ps"%(
+			x1/mm,y1/mm,z1/mm,A1,time1/ps))
+		self.m.log(2,
+			"timeHit 2:xh =%7.2f mm,yh =%7.2f mm,zh =%7.2f mm, A = %7.2f pes t= %7.2f ps"%(
+			x2/mm,y2/mm,z2/mm,A2,time2/ps))
+
+		self.hman.fill(self.T0Box1_histo_name,time1/ps)
+		self.hman.fill(self.T0Box2_histo_name,time2/ps)
+		self.hman.fill(self.T0Box12_histo_name,time1/ps,time2/ps)
+		self.hman.fill(self.T0Box1MinusT0Box2_histo_name,(time1-time2)/ps) 
+			
+		dbox1 = distance((x1,y1,z1),self.vertexBox1.XYZ())
+		tpath1 = dbox1/c_light
+
+		dbox2 = distance((x2,y2,z2),self.vertexBox2.XYZ())
+		tpath2 = dbox2/c_light
+
+		self.m.log(2,
+			"dbox1 =%7.2f mm,tpath1= %7.2f ps, time1 -tpath1 = %7.2f ps "%(
+			dbox1/mm,tpath1/ps,(time1 - tpath1)/ps))
+		self.m.log(2,
+			"dbox2 =%7.2f mm,tpath2= %7.2f ps, time2 -tpath2 = %7.2f ps "%(
+			dbox2/mm,tpath2/ps,(time2 - tpath2)/ps))
+
+		self.hman.fill(self.DBox1_histo_name,dbox1/mm)
+		self.hman.fill(self.TBox1_histo_name,tpath1/ps)
+		self.hman.fill(self.Time1MinusTBox1_histo_name,(time1 - tpath1)/ps)
+
+		self.hman.fill(self.DBox2_histo_name,dbox2/mm)
+		self.hman.fill(self.TBox2_histo_name,tpath2/ps)
+		self.hman.fill(self.Time2MinusTBox2_histo_name,(time2 - tpath2)/ps)
+
+		dt1 = time1 - tpath1
+		dt2 = time2 - tpath2
+		dt = dt1 - dt2
+		return dt
+
+############################################################
+	def Fiducial(self,event):
+		"""
+		This method checks that there is one photon in the fiducial volue
+		(defined by parameters) in each box. It returns 
+		fid = 0 if no photon is found in the fiduical volume
+		fid = 1 if one photon found in one box
+		fid = 2 if one photon found in each box
+		vertexBox1, vertexBox2 the vertices of the photons
+		"""
+
 		primaryParticles = PrimaryParticles(event)
 		self.m.log(2, ' number of primary Particles =%d '%(len(primaryParticles)))
 		
-		self.vertexBox1=Point3D()
-		self.vertexBox2=Point3D()
+		vertexBox1=Point3D()
+		vertexBox2=Point3D()
+		fid = 0
 		for pparticle in primaryParticles:
 			self.m.log(2, '\n+++primary particle+++\n')
 			ei,ef = particleKineticEnergy(pparticle)
@@ -264,9 +376,10 @@ class CRT(AAlgo):
 				self.hman.fill(self.ZBox1_histo_name, 
 					z/mm)
 
-				self.vertexBox1.x = x
-				self.vertexBox1.y = y
-				self.vertexBox1.z = z
+				vertexBox1.x = x
+				vertexBox1.y = y
+				vertexBox1.z = z
+				fid+=1
 			
 			elif self.fbox2.Active((x,y,z)) == True:
 				self.m.log(2,'gamma found in box2')
@@ -278,9 +391,10 @@ class CRT(AAlgo):
 				self.hman.fill(self.ZBox2_histo_name, 
 					z/mm)
 
-				self.vertexBox2.x = x
-				self.vertexBox2.y = y
-				self.vertexBox2.z = z
+				vertexBox2.x = x
+				vertexBox2.y = y
+				vertexBox2.z = z
+				fid+=1
 			else:
 				self.m.log(2,'gamma not found in box1 or in box2')
 				self.m.log(2, ' x0 =%7.2f mm, y0 =%7.2f mm, z0 =%7.2f mm '%(
@@ -290,10 +404,13 @@ class CRT(AAlgo):
 				self.m.log(2, "fBox1 --", self.fbox1)
 				self.m.log(2, "fBox2 ---", self.fbox2)
 				
-				return False
-
-			
-		self.numOutputEvents += 1
+				
+		return (fid,vertexBox1,vertexBox2)
+############################################################
+	def ComputeTimeMap(self,event):
+		"""
+		Compute time maps
+		"""
 
 		sensorhits =  event.GetMCSensHits()
 		self.m.log(3, " event has %d sensor hits = "%(len(sensorhits)))
@@ -308,14 +425,14 @@ class CRT(AAlgo):
 			zh = hit.GetPosition().z()
 			Ah = hit.GetAmplitude()
 			self.m.log(3, " hit, ID = ", hid)
-			self.m.log(3, ' xh =%7.2f mm, yh =%7.2f mm, zh =%7.2f mm Q =%d pes  '%(
+			self.m.log(3, ' xh =%7.2f mm, yh =%7.2f mm, zh =%7.2f mm Q =%d pes '%(
 			xh/mm,yh/mm,zh/mm,Ah))
 
 			self.m.log(4, " waveform for hit ID = %d"%(hit.GetSensorID()))
 			waveform = hit.GetWaveform().GetData()
 			
 			for timeBins in waveform:
-				# get the arrival time of the first pe
+				# get the arrival time of the pe
 				tbin = timeBins.first
 				time = tbin*5*ps
 				A = timeBins.second
@@ -358,6 +475,7 @@ class CRT(AAlgo):
 
 					break;
 
+		# sort the maps according to the time stamp of pes
 		TimeMapBox1 = sorted(timeMapBox1.items(), key=sortHits)
 		TimeMapBox2 = sorted(timeMapBox2.items(), key=sortHits)
 
@@ -365,73 +483,9 @@ class CRT(AAlgo):
 		self.m.log(4, " sorted time map box2 = ",TimeMapBox2)
 
 		timeMap = TimeMap(TimeMapBox1,TimeMapBox2)
+
+		return timeMap
 		
-		self.m.log(3, " Time maps = %s"%(timeMap))
-
-		x1,y1,z1,A1,time1 =timeMap.timeHit(boxNumber=1,index=0)
-		x2,y2,z2,A2,time2 =timeMap.timeHit(boxNumber=2,index=0)
-
-		self.m.log(2,
-			"timeHit 1:xh =%7.2f mm,yh =%7.2f mm,zh =%7.2f mm, A = %7.2f pes t= %7.2f ps"%(
-			x1/mm,y1/mm,z1/mm,A1,time1/ps))
-		self.m.log(2,
-			"timeHit 2:xh =%7.2f mm,yh =%7.2f mm,zh =%7.2f mm, A = %7.2f pes t= %7.2f ps"%(
-			x2/mm,y2/mm,z2/mm,A2,time2/ps))
-
-		self.hman.fill(self.T0Box1_histo_name,time1/ps)
-		self.hman.fill(self.T0Box2_histo_name,time2/ps)
-		self.hman.fill(self.T0Box12_histo_name,time1/ps,time2/ps)
-		self.hman.fill(self.T0Box1MinusT0Box2_histo_name,(time1-time2)/ps) 
-			
-
-		dbox1 = distance((x1,y1,z1),self.vertexBox1.XYZ())
-		tpath1 = dbox1/c_light
-
-		dbox2 = distance((x2,y2,z2),self.vertexBox2.XYZ())
-		tpath2 = dbox2/c_light
-
-		self.m.log(2,
-			"dbox1 =%7.2f mm,tpath1= %7.2f ps, time1 -tpath1 = %7.2f ps "%(
-			dbox1/mm,tpath1/ps,(time1 - tpath1)/ps))
-		self.m.log(2,
-			"dbox2 =%7.2f mm,tpath2= %7.2f ps, time2 -tpath2 = %7.2f ps "%(
-			dbox2/mm,tpath2/ps,(time2 - tpath2)/ps))
-
-		self.hman.fill(self.DBox1_histo_name,dbox1/mm)
-		self.hman.fill(self.TBox1_histo_name,tpath1/ps)
-		self.hman.fill(self.Time1MinusTBox1_histo_name,(time1 - tpath1)/ps)
-
-		self.hman.fill(self.DBox2_histo_name,dbox2/mm)
-		self.hman.fill(self.TBox2_histo_name,tpath2/ps)
-		self.hman.fill(self.Time2MinusTBox2_histo_name,(time2 - tpath2)/ps)
-
-		dt1 = time1 - tpath1
-		dt2 = time2 - tpath2
-		dt = dt1 - dt2
-
-		self.m.log(2,"dt =%7.2f ps, "%(dt/ps))
-		self.hman.fill(self.DT_histo_name,dt/ps)
-		
-
-		if self.debug == 1:
-			wait()	
-		return True
-		
-
-	############################################################
-	def finalize(self):
-
-		self.m.log(1, 'Finalize()')
-
-		self.m.log(1, 'Input  Events: ', self.numInputEvents)
-		self.m.log(1, 'Output Events: ', self.numOutputEvents)
-		
-
-		self.logman["USER"].ints[self.alabel("InputEvents")] = self.numInputEvents
-		self.logman["USER"].ints[self.alabel("OutputEvents")] = self.numOutputEvents
-		
-
-		return
 
 	############################################################
 	def particleInfo(self, lvl, particle):

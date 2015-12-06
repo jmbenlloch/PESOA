@@ -38,15 +38,15 @@ CNTJob WRITER S gateWriter
 
 #------------- log file -------------#
 CNTJob LOG I 0
-CNTJob FLOG S /Users/jjgomezcadenas/Development/PETALO/WORK/log/CRT.log
+CNTJob FLOG S /Users/jjgomezcadenas/Development/PETALO/WORK/log/tof_electrons_refl_VUV3mm_z3cm.log
 
 #---------- histogram file ----------#
 CNTJob HISTOS 1
-CNTJob FHISTOS S /Users/jjgomezcadenas/Development/PETALO/WORK/histo/CRT_histos.root
+CNTJob FHISTOS S /Users/jjgomezcadenas/Development/PETALO/WORK/histo/tof_electrons_refl_VUV3mm_z3cm_histos.root
 
 #---------- histogram file ----------#
 CNTJob TREES 0
-CNTJob FTREES S /Users/jjgomezcadenas/Development/PETALO/WORK/tree/CRT_trees.root
+CNTJob FTREES S /Users/jjgomezcadenas/Development/PETALO/WORK/tree/tof_electrons_refl_VUV3mm_z3cm_trees.root
 
 #------ SAVE EVENTS IN OUTPUT FILE ----------# 
 CNTJob SAVE I 0
