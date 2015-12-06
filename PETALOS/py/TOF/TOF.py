@@ -1,6 +1,15 @@
 from Centella.physical_constants import *
 ps = picosecond
 
+############################################################
+def sortHits(hit):
+	"""
+	A helper function used to sort the hits. The hits are organises like this:
+	(id, [x,y,z,A,t]): the function returns the time as key to sort the hit list
+	"""
+	hitVal = hit[1]
+	return hitVal[4]
+
 ###########################################################
 class TimeMap(object):
 
@@ -22,7 +31,6 @@ class TimeMap(object):
 		are ordered, '0' is the earliest time.  
 		"""
 		
-
 		tmb = self.tmb1
 		if boxNumber == 2:
 			tmb = self.tmb2

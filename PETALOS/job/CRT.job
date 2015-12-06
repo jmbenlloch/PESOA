@@ -42,7 +42,7 @@ CNTJob FLOG S /Users/jjgomezcadenas/Development/PETALO/WORK/log/tof_electrons_re
 
 #---------- histogram file ----------#
 CNTJob HISTOS 1
-CNTJob FHISTOS S /Users/jjgomezcadenas/Development/PETALO/WORK/histo/tof_electrons_refl_VUV3mm_z3cm_histos.root
+CNTJob FHISTOS S /Users/jjgomezcadenas/Development/PETALO/WORK/histo/tof_electrons_refl_VUV3mm_z3cm_histos_QE_02.root
 
 #---------- histogram file ----------#
 CNTJob TREES 0
@@ -69,9 +69,11 @@ CRT
 #--------- Algo PARAMS -------#
 CRT VLEVEL I 1
 
+CRT NPE I 10
 CRT Debug I 0
 
-CRT QE D 1.
+CRT QE D 0.2
+CRT TJ D 0.2
 CRT Box1Id IV 4
 0
 63

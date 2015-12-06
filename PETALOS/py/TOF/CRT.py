@@ -11,10 +11,6 @@ import random as rnd
 This algorithm computes the Coincidence Resolution Time. 
 """
 
-############################################################
-def sortHits(hit):
-	hitVal = hit[1]
-	return hitVal[4]
 
 class CRT(AAlgo):
 
@@ -40,7 +36,9 @@ class CRT(AAlgo):
   		boxCoord2 =self.loadCoord("Box2V")
   		fboxCoord1 =self.loadCoord("FBox1V")
   		fboxCoord2 =self.loadCoord("FBox2V")
-  		self.QE = self.doubles["QE"]
+  		self.QE = self.doubles["QE"]  #quantum efficiency
+  		self.NPE = self.ints["NPE"]   #number of pe for time average
+
   		self.box1ID=self.vints["Box1Id"]
   		self.box2ID=self.vints["Box2Id"] 
 
@@ -72,168 +70,14 @@ class CRT(AAlgo):
 		### Defining histos
 		# Event energy histogram
 
-		self.Fiducial_histo_desc = "Fiducial"
-		self.Fiducial_histo_name = self.alabel(self.Fiducial_histo_desc)
-		self.hman.h1(self.Fiducial_histo_name, self.Fiducial_histo_desc, 
-			10, 0, 5)
-		self.hman.fetch(
-			self.Fiducial_histo_name).GetXaxis().SetTitle(
-			"Fiducial interactions")
+		self.Histos()
 
-		self.XYZBox1_histo_desc = "XYZBox1"
-		self.XYZBox1_histo_name = self.alabel(self.XYZBox1_histo_desc)
-		self.hman.h3(self.XYZBox1_histo_name, self.XYZBox1_histo_desc, 
-			10, self.box1.xmin, self.box1.xmax,
-           	10, self.box1.ymin, self.box1.ymax,
-           	10, self.box1.zmin, self.box1.zmax)
-		self.hman.fetch(
-			self.XYZBox1_histo_name).GetXaxis().SetTitle(
-			"XYZ interaction box 1 (mm)")
 
-		self.XYBox1_histo_desc = "XYBox1"
-		self.XYBox1_histo_name = self.alabel(self.XYBox1_histo_desc)
-		self.hman.h2(self.XYBox1_histo_name, self.XYBox1_histo_desc, 
-			25, self.box1.xmin, self.box1.xmax,
-           	25, self.box1.ymin, self.box1.ymax)  	
-		self.hman.fetch(
-			self.XYBox1_histo_name).GetXaxis().SetTitle(
-			"XY interaction box 1 (mm)")
-
-		self.ZBox1_histo_desc = "ZBox1"
-		self.ZBox1_histo_name = self.alabel(self.ZBox1_histo_desc)
-		self.hman.h1(self.ZBox1_histo_name, self.ZBox1_histo_desc, 
-			50, self.box1.zmin, self.box1.zmax)
-		self.hman.fetch(
-			self.ZBox1_histo_name).GetXaxis().SetTitle(
-			"Z interaction box 1 (mm)")
-
-		self.T0Box1_histo_desc = "T0Box1"
-		self.T0Box1_histo_name = self.alabel(self.T0Box1_histo_desc)
-		self.hman.h1(self.T0Box1_histo_name, self.T0Box1_histo_desc, 
-			50, 0, 500)
-		self.hman.fetch(
-			self.T0Box1_histo_name).GetXaxis().SetTitle(
-			"t0 box1 (ps)")
-
-		self.DBox1_histo_desc = "DBox1"
-		self.DBox1_histo_name = self.alabel(self.DBox1_histo_desc)
-		self.hman.h1(self.DBox1_histo_name, self.DBox1_histo_desc, 
-			50, 0, 50)
-		self.hman.fetch(
-			self.DBox1_histo_name).GetXaxis().SetTitle(
-			"distance T0 hit to vertex box 1 (mm)")
-
-		self.TBox1_histo_desc = "TBox1"
-		self.TBox1_histo_name = self.alabel(self.TBox1_histo_desc)
-		self.hman.h1(self.TBox1_histo_name, self.TBox1_histo_desc, 
-			50, 0, 500)
-		self.hman.fetch(
-			self.TBox1_histo_name).GetXaxis().SetTitle(
-			"time T0 hit to vertex box 1 (ps)")
-
-		self.DBox2_histo_desc = "DBox2"
-		self.DBox2_histo_name = self.alabel(self.DBox2_histo_desc)
-		self.hman.h1(self.DBox2_histo_name, self.DBox2_histo_desc, 
-			50, 0, 50)
-		self.hman.fetch(
-			self.DBox2_histo_name).GetXaxis().SetTitle(
-			"distance T0 hit to vertex box 1 (mm)")
-
-		self.TBox2_histo_desc = "TBox2"
-		self.TBox2_histo_name = self.alabel(self.TBox2_histo_desc)
-		self.hman.h1(self.TBox2_histo_name, self.TBox2_histo_desc, 
-			50, 0, 500)
-		self.hman.fetch(
-			self.TBox2_histo_name).GetXaxis().SetTitle(
-			"time T0 hit to vertex box 2 (ps)")
-
-		self.Time1MinusTBox1_histo_desc = "Time1MinusTBox1"
-		self.Time1MinusTBox1_histo_name = self.alabel(self.Time1MinusTBox1_histo_desc)
-		self.hman.h1(self.Time1MinusTBox1_histo_name, self.Time1MinusTBox1_histo_desc, 
-			50, -200, 200)
-		self.hman.fetch(
-			self.Time1MinusTBox1_histo_name).GetXaxis().SetTitle(
-			"T0 minus tvertex box1 (ps)")
-
-		self.Time2MinusTBox2_histo_desc = "Time2MinusTBox2"
-		self.Time2MinusTBox2_histo_name = self.alabel(self.Time2MinusTBox2_histo_desc)
-		self.hman.h1(self.Time2MinusTBox2_histo_name, self.Time2MinusTBox2_histo_desc, 
-			50, -200, 200)
-		self.hman.fetch(
-			self.Time2MinusTBox2_histo_name).GetXaxis().SetTitle(
-			"T0 minus tvertex box2 (ps)")
-
-			
-
-		self.XYZBox2_histo_desc = "XYZBox2"
-		self.XYZBox2_histo_name = self.alabel(self.XYZBox2_histo_desc)
-		self.hman.h3(self.XYZBox2_histo_name, self.XYZBox2_histo_desc, 
-			10, self.box2.xmin, self.box2.xmax,
-           	10, self.box2.ymin, self.box2.ymax,
-           	10, self.box2.zmin, self.box2.zmax)
-		self.hman.fetch(
-			self.XYZBox2_histo_name).GetXaxis().SetTitle(
-			"XYZ interaction box 2 (mm)")
-
-		self.XYBox2_histo_desc = "XYBox2"
-		self.XYBox2_histo_name = self.alabel(self.XYBox2_histo_desc)
-		self.hman.h2(self.XYBox2_histo_name, self.XYBox2_histo_desc, 
-			25, self.box2.xmin, self.box2.xmax,
-           	25, self.box2.ymin, self.box2.ymax)
-           	
-		self.hman.fetch(
-			self.XYBox2_histo_name).GetXaxis().SetTitle(
-			"XY interaction box 2 (mm)")
-
-		self.ZBox2_histo_desc = "ZBox2"
-		self.ZBox2_histo_name = self.alabel(self.ZBox2_histo_desc)
-		self.hman.h1(self.ZBox2_histo_name, self.ZBox2_histo_desc, 
-			50, self.box1.zmin, self.box1.zmax)
-   
-		self.hman.fetch(
-			self.ZBox2_histo_name).GetXaxis().SetTitle(
-			"Z interaction box 2 (mm)")
-
-		self.T0Box2_histo_desc = "T0Box2"
-		self.T0Box2_histo_name = self.alabel(self.T0Box2_histo_desc)
-		self.hman.h1(self.T0Box2_histo_name, self.T0Box2_histo_desc, 
-			50, 0, 500)
-
-		self.hman.fetch(
-			self.T0Box2_histo_name).GetXaxis().SetTitle(
-			"t0 box2 (ps)")
-
-		self.T0Box12_histo_desc = "T0Box12"
-		self.T0Box12_histo_name = self.alabel(self.T0Box12_histo_desc)
-		self.hman.h2(self.T0Box12_histo_name, self.T0Box12_histo_desc, 
-			20, 0, 200,
-           	20, 0, 200)
-
-		self.hman.fetch(
-			self.T0Box12_histo_name).GetXaxis().SetTitle(
-			"t0 box1 vs box2 (ps)")
-
-		self.T0Box1MinusT0Box2_histo_desc = "T0Box1MinusT0Box2"
-		self.T0Box1MinusT0Box2_histo_name = self.alabel(self.T0Box1MinusT0Box2_histo_desc)
-		self.hman.h1(self.T0Box1MinusT0Box2_histo_name, self.T0Box1MinusT0Box2_histo_desc, 
-			50, -250, 250)
-		self.hman.fetch(
-			self.T0Box1MinusT0Box2_histo_name).GetXaxis().SetTitle(
-			"t0 box1 minus t0 box2 (ps)")
-
-		self.DT_histo_desc = "DT"
-		self.DT_histo_name = self.alabel(self.DT_histo_desc)
-		self.hman.h1(self.DT_histo_name, self.DT_histo_desc, 
-			50, -200, 200)
-		self.hman.fetch(
-			self.DT_histo_name).GetXaxis().SetTitle(
-			"DT (ps)")
     ### Counters:
 		self.numInputEvents = 0
 		self.numOutputEvents = 0
 		
 		return
-
 
 
 	############################################################
@@ -266,6 +110,19 @@ class CRT(AAlgo):
 
 		self.m.log(2,"dt =%7.2f ps, "%(self.dt1/ps))
 		self.hman.fill(self.DT_histo_name,self.dt1/ps)
+
+		#Compute DT using up to NPE pe
+
+		self.DT = self.dtNPE()
+
+		self.m.log(2,"DT for the first %d pe"%(self.NPE))
+		for i in xrange(len(self.DT)-1):
+			DT_histo_desc = "DT"+str(i+1)
+			DT_histo_name = self.alabel(DT_histo_desc)
+			d = self.DT[i]
+			self.m.log(2,"dt =%7.2f ps, "%(d/ps))
+			self.hman.fill(DT_histo_name,d/ps)
+
 		
 		if self.debug == 1:
 			wait()	
@@ -287,6 +144,27 @@ class CRT(AAlgo):
 		
 
 		return
+
+###########################################################
+	def dtNPE(self):
+		"""
+		Computes the DT averaging the first NPE pes.
+		"""
+		dt = self.dt1
+		DT=[]
+		DT.append(dt)
+		for i in xrange(self.NPE):
+			dt += self.DNthPe(i+1)
+			DT.append(dt)
+
+		DTA=[]
+		num = 1.
+		for d in DT:
+			d = d/num
+			DTA.append(d)
+			num+=1
+
+		return DTA
 ###########################################################
 	def DTFirstPe(self):
 		"""
@@ -296,10 +174,10 @@ class CRT(AAlgo):
 		x1,y1,z1,A1,time1 =self.timeMap.timeHit(boxNumber=1,index=0)
 		x2,y2,z2,A2,time2 =self.timeMap.timeHit(boxNumber=2,index=0)
 
-		self.m.log(2,
+		self.m.log(3,
 			"timeHit 1:xh =%7.2f mm,yh =%7.2f mm,zh =%7.2f mm, A = %7.2f pes t= %7.2f ps"%(
 			x1/mm,y1/mm,z1/mm,A1,time1/ps))
-		self.m.log(2,
+		self.m.log(3,
 			"timeHit 2:xh =%7.2f mm,yh =%7.2f mm,zh =%7.2f mm, A = %7.2f pes t= %7.2f ps"%(
 			x2/mm,y2/mm,z2/mm,A2,time2/ps))
 
@@ -314,10 +192,10 @@ class CRT(AAlgo):
 		dbox2 = distance((x2,y2,z2),self.vertexBox2.XYZ())
 		tpath2 = dbox2/c_light
 
-		self.m.log(2,
+		self.m.log(3,
 			"dbox1 =%7.2f mm,tpath1= %7.2f ps, time1 -tpath1 = %7.2f ps "%(
 			dbox1/mm,tpath1/ps,(time1 - tpath1)/ps))
-		self.m.log(2,
+		self.m.log(3,
 			"dbox2 =%7.2f mm,tpath2= %7.2f ps, time2 -tpath2 = %7.2f ps "%(
 			dbox2/mm,tpath2/ps,(time2 - tpath2)/ps))
 
@@ -328,6 +206,40 @@ class CRT(AAlgo):
 		self.hman.fill(self.DBox2_histo_name,dbox2/mm)
 		self.hman.fill(self.TBox2_histo_name,tpath2/ps)
 		self.hman.fill(self.Time2MinusTBox2_histo_name,(time2 - tpath2)/ps)
+
+		dt1 = time1 - tpath1
+		dt2 = time2 - tpath2
+		dt = dt1 - dt2
+		return dt
+
+###########################################################
+	def DNthPe(self,peIndex):
+		"""
+		Compute DT using the PE with peIndex (=0 is first PE)
+		"""
+
+		x1,y1,z1,A1,time1 =self.timeMap.timeHit(boxNumber=1,index=peIndex)
+		x2,y2,z2,A2,time2 =self.timeMap.timeHit(boxNumber=2,index=peIndex)
+
+		self.m.log(3,
+			"timeHit 1:xh =%7.2f mm,yh =%7.2f mm,zh =%7.2f mm, A = %7.2f pes t= %7.2f ps"%(
+			x1/mm,y1/mm,z1/mm,A1,time1/ps))
+		self.m.log(3,
+			"timeHit 2:xh =%7.2f mm,yh =%7.2f mm,zh =%7.2f mm, A = %7.2f pes t= %7.2f ps"%(
+			x2/mm,y2/mm,z2/mm,A2,time2/ps)) 
+			
+		dbox1 = distance((x1,y1,z1),self.vertexBox1.XYZ())
+		tpath1 = dbox1/c_light
+
+		dbox2 = distance((x2,y2,z2),self.vertexBox2.XYZ())
+		tpath2 = dbox2/c_light
+
+		self.m.log(3,
+			"dbox1 =%7.2f mm,tpath1= %7.2f ps, time1 -tpath1 = %7.2f ps "%(
+			dbox1/mm,tpath1/ps,(time1 - tpath1)/ps))
+		self.m.log(3,
+			"dbox2 =%7.2f mm,tpath2= %7.2f ps, time2 -tpath2 = %7.2f ps "%(
+			dbox2/mm,tpath2/ps,(time2 - tpath2)/ps))
 
 		dt1 = time1 - tpath1
 		dt2 = time2 - tpath2
@@ -559,6 +471,177 @@ class CRT(AAlgo):
 			s+="ID = %s time =%7.2f ps \n"%(hid,time)
 
 		return s
+
+	############################################################		
+	def Histos(self):
+		"""
+		book the histograms for the algo 
+		"""
+
+		self.Fiducial_histo_desc = "Fiducial"
+		self.Fiducial_histo_name = self.alabel(self.Fiducial_histo_desc)
+		self.hman.h1(self.Fiducial_histo_name, self.Fiducial_histo_desc, 
+			10, 0, 5)
+		self.hman.fetch(
+			self.Fiducial_histo_name).GetXaxis().SetTitle(
+			"Fiducial interactions")
+
+		self.XYZBox1_histo_desc = "XYZBox1"
+		self.XYZBox1_histo_name = self.alabel(self.XYZBox1_histo_desc)
+		self.hman.h3(self.XYZBox1_histo_name, self.XYZBox1_histo_desc, 
+			10, self.box1.xmin, self.box1.xmax,
+           	10, self.box1.ymin, self.box1.ymax,
+           	10, self.box1.zmin, self.box1.zmax)
+		self.hman.fetch(
+			self.XYZBox1_histo_name).GetXaxis().SetTitle(
+			"XYZ interaction box 1 (mm)")
+
+		self.XYBox1_histo_desc = "XYBox1"
+		self.XYBox1_histo_name = self.alabel(self.XYBox1_histo_desc)
+		self.hman.h2(self.XYBox1_histo_name, self.XYBox1_histo_desc, 
+			25, self.box1.xmin, self.box1.xmax,
+           	25, self.box1.ymin, self.box1.ymax)  	
+		self.hman.fetch(
+			self.XYBox1_histo_name).GetXaxis().SetTitle(
+			"XY interaction box 1 (mm)")
+
+		self.ZBox1_histo_desc = "ZBox1"
+		self.ZBox1_histo_name = self.alabel(self.ZBox1_histo_desc)
+		self.hman.h1(self.ZBox1_histo_name, self.ZBox1_histo_desc, 
+			50, self.box1.zmin, self.box1.zmax)
+		self.hman.fetch(
+			self.ZBox1_histo_name).GetXaxis().SetTitle(
+			"Z interaction box 1 (mm)")
+
+		self.T0Box1_histo_desc = "T0Box1"
+		self.T0Box1_histo_name = self.alabel(self.T0Box1_histo_desc)
+		self.hman.h1(self.T0Box1_histo_name, self.T0Box1_histo_desc, 
+			50, 0, 500)
+		self.hman.fetch(
+			self.T0Box1_histo_name).GetXaxis().SetTitle(
+			"t0 box1 (ps)")
+
+		self.DBox1_histo_desc = "DBox1"
+		self.DBox1_histo_name = self.alabel(self.DBox1_histo_desc)
+		self.hman.h1(self.DBox1_histo_name, self.DBox1_histo_desc, 
+			50, 0, 50)
+		self.hman.fetch(
+			self.DBox1_histo_name).GetXaxis().SetTitle(
+			"distance T0 hit to vertex box 1 (mm)")
+
+		self.TBox1_histo_desc = "TBox1"
+		self.TBox1_histo_name = self.alabel(self.TBox1_histo_desc)
+		self.hman.h1(self.TBox1_histo_name, self.TBox1_histo_desc, 
+			50, 0, 500)
+		self.hman.fetch(
+			self.TBox1_histo_name).GetXaxis().SetTitle(
+			"time T0 hit to vertex box 1 (ps)")
+
+		self.DBox2_histo_desc = "DBox2"
+		self.DBox2_histo_name = self.alabel(self.DBox2_histo_desc)
+		self.hman.h1(self.DBox2_histo_name, self.DBox2_histo_desc, 
+			50, 0, 50)
+		self.hman.fetch(
+			self.DBox2_histo_name).GetXaxis().SetTitle(
+			"distance T0 hit to vertex box 1 (mm)")
+
+		self.TBox2_histo_desc = "TBox2"
+		self.TBox2_histo_name = self.alabel(self.TBox2_histo_desc)
+		self.hman.h1(self.TBox2_histo_name, self.TBox2_histo_desc, 
+			50, 0, 500)
+		self.hman.fetch(
+			self.TBox2_histo_name).GetXaxis().SetTitle(
+			"time T0 hit to vertex box 2 (ps)")
+
+		self.Time1MinusTBox1_histo_desc = "Time1MinusTBox1"
+		self.Time1MinusTBox1_histo_name = self.alabel(self.Time1MinusTBox1_histo_desc)
+		self.hman.h1(self.Time1MinusTBox1_histo_name, self.Time1MinusTBox1_histo_desc, 
+			50, -200, 200)
+		self.hman.fetch(
+			self.Time1MinusTBox1_histo_name).GetXaxis().SetTitle(
+			"T0 minus tvertex box1 (ps)")
+
+		self.Time2MinusTBox2_histo_desc = "Time2MinusTBox2"
+		self.Time2MinusTBox2_histo_name = self.alabel(self.Time2MinusTBox2_histo_desc)
+		self.hman.h1(self.Time2MinusTBox2_histo_name, self.Time2MinusTBox2_histo_desc, 
+			50, -200, 200)
+		self.hman.fetch(
+			self.Time2MinusTBox2_histo_name).GetXaxis().SetTitle(
+			"T0 minus tvertex box2 (ps)")
+
+		self.XYZBox2_histo_desc = "XYZBox2"
+		self.XYZBox2_histo_name = self.alabel(self.XYZBox2_histo_desc)
+		self.hman.h3(self.XYZBox2_histo_name, self.XYZBox2_histo_desc, 
+			10, self.box2.xmin, self.box2.xmax,
+           	10, self.box2.ymin, self.box2.ymax,
+           	10, self.box2.zmin, self.box2.zmax)
+		self.hman.fetch(
+			self.XYZBox2_histo_name).GetXaxis().SetTitle(
+			"XYZ interaction box 2 (mm)")
+
+		self.XYBox2_histo_desc = "XYBox2"
+		self.XYBox2_histo_name = self.alabel(self.XYBox2_histo_desc)
+		self.hman.h2(self.XYBox2_histo_name, self.XYBox2_histo_desc, 
+			25, self.box2.xmin, self.box2.xmax,
+           	25, self.box2.ymin, self.box2.ymax)
+           	
+		self.hman.fetch(
+			self.XYBox2_histo_name).GetXaxis().SetTitle(
+			"XY interaction box 2 (mm)")
+
+		self.ZBox2_histo_desc = "ZBox2"
+		self.ZBox2_histo_name = self.alabel(self.ZBox2_histo_desc)
+		self.hman.h1(self.ZBox2_histo_name, self.ZBox2_histo_desc, 
+			50, self.box1.zmin, self.box1.zmax)
+   
+		self.hman.fetch(
+			self.ZBox2_histo_name).GetXaxis().SetTitle(
+			"Z interaction box 2 (mm)")
+
+		self.T0Box2_histo_desc = "T0Box2"
+		self.T0Box2_histo_name = self.alabel(self.T0Box2_histo_desc)
+		self.hman.h1(self.T0Box2_histo_name, self.T0Box2_histo_desc, 
+			50, 0, 500)
+
+		self.hman.fetch(
+			self.T0Box2_histo_name).GetXaxis().SetTitle(
+			"t0 box2 (ps)")
+
+		self.T0Box12_histo_desc = "T0Box12"
+		self.T0Box12_histo_name = self.alabel(self.T0Box12_histo_desc)
+		self.hman.h2(self.T0Box12_histo_name, self.T0Box12_histo_desc, 
+			20, 0, 200,
+           	20, 0, 200)
+
+		self.hman.fetch(
+			self.T0Box12_histo_name).GetXaxis().SetTitle(
+			"t0 box1 vs box2 (ps)")
+
+		self.T0Box1MinusT0Box2_histo_desc = "T0Box1MinusT0Box2"
+		self.T0Box1MinusT0Box2_histo_name = self.alabel(self.T0Box1MinusT0Box2_histo_desc)
+		self.hman.h1(self.T0Box1MinusT0Box2_histo_name, self.T0Box1MinusT0Box2_histo_desc, 
+			50, -250, 250)
+		self.hman.fetch(
+			self.T0Box1MinusT0Box2_histo_name).GetXaxis().SetTitle(
+			"t0 box1 minus t0 box2 (ps)")
+
+
+		self.DT_histo_desc = "DT"
+		self.DT_histo_name = self.alabel(self.DT_histo_desc)
+		self.hman.h1(self.DT_histo_name, self.DT_histo_desc, 
+			50, -200, 200)
+		self.hman.fetch(
+			self.DT_histo_name).GetXaxis().SetTitle(
+			"DT (ps)")
+
+		for i in xrange(self.NPE):
+			DT_histo_desc = "DT"+str(i+1)
+			lbl ="DT computed with %s PES (ps)"%(i+1)
+			DT_histo_name = self.alabel(DT_histo_desc)
+			self.hman.h1(DT_histo_name, DT_histo_desc, 
+			50, -200, 200)
+			self.hman.fetch(DT_histo_name).GetXaxis().SetTitle(lbl)
+
 
 
 
