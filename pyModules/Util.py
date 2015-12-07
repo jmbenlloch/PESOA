@@ -2,6 +2,7 @@
 Utilities
 """
 from math import *
+import sys
 
 def wait():
 	raw_input("Press a key...")
@@ -20,6 +21,7 @@ def lin(x,x0,y0,x1,y1):
 	"""
 	lineal extrapolation
 	"""
+	
 	return y0 + (x-x0)*(y1-y0)/(x1-x0)
 
 def inRange(x,xmin,xmax):

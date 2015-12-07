@@ -345,7 +345,7 @@ def Histograms(hman,box1,box2):
 
 if __name__ == '__main__':
 
-	nevents = 10000
+	nevents = 100000
 	nprint = 1000
 	m = Messenger(0)
 

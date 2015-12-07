@@ -5,10 +5,29 @@ Properties of LXe
 
 from Xenon import *
 
+#energy in eV
+LXeRefractionIndex =[
+[6.4, 1.58587, 0.0964027],
+[6.6, 1.61513, 0.508607],
+[6.8, 1.6505, 1.33957],
+[7, 1.69447, 1.69005],
+[7.2, 1.75124, 1.02138],
+[7.4, 1.82865, 0.295683],
+[7.6, 1.94333, 0.098714]
+]
+
+############################################################
+def sortRI(elem):
+  """
+  A helper function used to sort the hits. The hits are organises like this:
+  (id, [x,y,z,A,t]): the function returns the time as key to sort the hit list
+  """
+  return elem[0]
+
 class LXe:
   def __init__(self, wi=15.6*eV,ws=16.6*eV,lambdaScint=172*nm,rayleigh=36*mm,
       tau1=2.2*ns,tau2=27*ns,tau3=45*ns,
-      rtau1=0.1,rtau2=0.2,rtau3=0.7,nUV=1.75,nBlue=1.4):
+      rtau1=0.1,rtau2=0.2,rtau3=0.7,nUV=1.70,nBlue=1.4):
     
     self.Z = 54
     self.A = 131.29*g/mol
@@ -28,6 +47,53 @@ class LXe:
     self.rtau3=rtau3
     self.nUV = nUV
     self.nBlue=nBlue
+    lxri =[]  #transform to nm
+    for elem in LXeRefractionIndex:
+      ene = elem[0]
+      n = elem[1]
+      f = elem[2]
+      x =[(1240./ene)*nm,n,f]
+      #print x[0]/nm
+      lxri.append(x)
+
+    self.LXRI = sorted(lxri, key=sortRI)
+    #print self.LXRI
+
+  def AverageLamdaAndRI(self):
+    """
+    Returns the average lamda and refraction index
+    """
+    l=0.
+    n=0.
+    w=0.
+    for elem in self.LXRI:
+      l+=elem[0]*elem[2]
+      n+=elem[1]*elem[2]
+      w+=elem[2]
+    return (l/w,n/w)
+
+
+
+  def RefractionIndex(self,lamda):
+    """
+    returns the refraction index
+    """
+
+    if lamda < self.LXRI[0][0]:
+      return self.LXRI[0][1] 
+    elif lamda > self.LXRI[6][0]:
+      return self.LXRI[6][1]
+    else:
+      for i in xrange(len(self.LXRI)-1):
+        elem = self.LXRI[i]
+        x0 = elem[0]
+        y0 = elem[1]
+        elem = self.LXRI[i+1]
+        x1 = elem[0]
+        y1 = elem[1]
+        if lamda >= x0 and lamda < x1:
+          break
+      return lin(lamda,x0,y0,x1,y1)
 
   def AtomicNumber(self):
     """
@@ -53,7 +119,8 @@ class LXe:
     return self.x0
   
   def RefractionIndexUV(self):
-    return self.nUV
+    l,n = self.AverageLamdaAndRI()
+    return n
 
   def RefractionIndexBlue(self):
     return self.nBlue
@@ -217,8 +284,18 @@ if __name__ == '__main__':
     
     lxe = LXe()
 
+    
     print lxe  
 
+    for l in drange(150*nm,220*nm,5*nm):
+      print """
+      for lamda = %7.2f nm (%7.2f eV) n = %7.2f
+      """%(l/nm, 1240./(l/nm), lxe.RefractionIndex(l))
+
+    l,n = lxe.AverageLamdaAndRI()
+    print """
+    Average lamda = %7.2f nm ; average n = %7.2f
+    """%(l/nm, n)
     print "Efficiency for 511 keV photons" 
 
     for z in drange(1., 11., 1.):

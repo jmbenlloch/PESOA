@@ -52,7 +52,7 @@ CNTJob FTREES S /Users/jjgomezcadenas/Development/PETALO/WORK/tree/tof_electrons
 CNTJob SAVE I 0
 
 #---------- NUMBER OF EVENTS TO ANALYZE ----------#
-CNTJob NEVENTS I 2000
+CNTJob NEVENTS I 5000
 
 #---------- FIRST EVENT TO ANALYZE ----------#
 CNTJob FEVENT I 0
@@ -68,12 +68,12 @@ CRT
 
 #--------- Algo PARAMS -------#
 CRT VLEVEL I 1
-
-CRT NPE I 10
 CRT Debug I 0
 
+CRT NPE I 10
 CRT QE D 1.0
 CRT JITTER D 0
+
 CRT Box1Id IV 4
 0
 63

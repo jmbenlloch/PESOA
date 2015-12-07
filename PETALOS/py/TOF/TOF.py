@@ -1,5 +1,6 @@
 from Centella.physical_constants import *
 import random as rnd
+from Geometry import *
 ps = picosecond
 
 ############################################################
@@ -12,8 +13,37 @@ def sortHits(hit):
 	return hitVal[4]
 
 ###########################################################
-class TimeMap(object):
+class SiPMHit(object):
+	def __init__(self,hid,x,y,z,A,time):
+		"""
+		Describes a hit in a given SiPM
+		id: id of SiPM
+		x,y,z: position of SiPM
+		A: ampliute (in pes)
+		time: time stamp of hit
+		"""
+		self.id = hid
+		self.hit = Point4D(x,y,z,time)
+		self.A = A
 
+	def T(self):
+		return self.hit.T()
+
+	def XYZ(self):
+		return self.hit.XYZ()
+
+	def __str__(self):
+		s="""hit\n
+			id = %s x = %7.2f mm, y = %7.2f mm z = %7.2f mm 
+			t = %7.2f ps A = %7.2f pes
+			"""%(self.id, self.hit.x, self.hit.y, self.hit.z,
+				self.hit.t, self.A)
+
+		return s
+	
+
+###########################################################
+class TimeMap(object):
 	def __init__(self,TimeMapBox1,TimeMapBox2):
 		"""
 		TimeMapBox1 and TimeMapBox2 are lists which describethe time-ordered zero-supressed
@@ -28,7 +58,9 @@ class TimeMap(object):
 		self.nhb2 = len(self.tmb2)
 
 	def NumberOfHits(self):
+
 		return (self.nhb1,self.nhb2)
+
 	def timeHit(self,boxNumber=1,index=0,jitter=0):
 		"""
 		Returns the hit with index in box1 or box2 (boxNumber).
@@ -55,7 +87,7 @@ class TimeMap(object):
 		#print "boxNumber =%d"%(boxNumber)
 		#print "x,y,z,A,time",x,y,z,A,time
 
-		return (hid,x,y,z,A,time)
+		return SiPMHit(hid,x,y,z,A,time)
 
 	def __str__(self):
 		s=' Time Map Box1\n'

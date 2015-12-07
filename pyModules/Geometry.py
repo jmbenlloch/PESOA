@@ -267,7 +267,7 @@ class Point3D:
     """
     xyz coordinates
     """
-    return self.x,self.y,self.z
+    return (self.x,self.y,self.z)
 
   def __str__(self):
 
@@ -297,7 +297,7 @@ class Point4D(Point3D):
     """
     t coordinate 
     """
-    return self.x,self.y,self.z,self.t
+    return (self.x,self.y,self.z,self.t)
 
   def __str__(self):
 
