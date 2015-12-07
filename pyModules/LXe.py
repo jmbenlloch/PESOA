@@ -8,7 +8,7 @@ from Xenon import *
 class LXe:
   def __init__(self, wi=15.6*eV,ws=16.6*eV,lambdaScint=172*nm,rayleigh=36*mm,
       tau1=2.2*ns,tau2=27*ns,tau3=45*ns,
-      rtau1=0.1,rtau2=0.2,rtau3=0.7,nUV=1.55,nBlue=1.4):
+      rtau1=0.1,rtau2=0.2,rtau3=0.7,nUV=1.75,nBlue=1.4):
     
     self.Z = 54
     self.A = 131.29*g/mol

@@ -1,4 +1,5 @@
 from Centella.physical_constants import *
+import random as rnd
 ps = picosecond
 
 ############################################################
@@ -23,8 +24,12 @@ class TimeMap(object):
     	
 		self.tmb1=TimeMapBox1
 		self.tmb2=TimeMapBox2
+		self.nhb1 = len(self.tmb1)
+		self.nhb2 = len(self.tmb2)
 
-	def timeHit(self,boxNumber=1,index=0):
+	def NumberOfHits(self):
+		return (self.nhb1,self.nhb2)
+	def timeHit(self,boxNumber=1,index=0,jitter=0):
 		"""
 		Returns the hit with index in box1 or box2 (boxNumber).
 		index runs from 0 to the length of the TimeMap lists. Since the maps
@@ -44,10 +49,13 @@ class TimeMap(object):
 		A = values[3]
 		time = values[4]
 
+		if jitter > 0:
+			time += rnd.uniform(-1.,1.)*jitter
+
 		#print "boxNumber =%d"%(boxNumber)
 		#print "x,y,z,A,time",x,y,z,A,time
 
-		return (x,y,z,A,time)
+		return (hid,x,y,z,A,time)
 
 	def __str__(self):
 		s=' Time Map Box1\n'

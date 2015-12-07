@@ -37,6 +37,7 @@ class CRT(AAlgo):
   		fboxCoord1 =self.loadCoord("FBox1V")
   		fboxCoord2 =self.loadCoord("FBox2V")
   		self.QE = self.doubles["QE"]  #quantum efficiency
+  		self.TJ = self.doubles["JITTER"]*ps  #time jitter of SiPM + ASIC
   		self.NPE = self.ints["NPE"]   #number of pe for time average
 
   		self.box1ID=self.vints["Box1Id"]
@@ -55,8 +56,10 @@ class CRT(AAlgo):
 		self.m.log(1, "IDs Box1 --", self.box1ID)
 		self.m.log(1, "IDs Box2 --", self.box2ID)
 
-		# self.lxe = LXe() #lxe properties
-		# print self.lxe
+		self.m.log(1, "QE = %7.2f Time Jitter =%7.2f ps  --"%(self.QE, self.TJ/ps))
+
+		self.lxe = LXe() #lxe properties
+		print self.lxe
 
 		if self.debug == 1:
 			wait()
@@ -71,7 +74,6 @@ class CRT(AAlgo):
 		# Event energy histogram
 
 		self.Histos()
-
 
     ### Counters:
 		self.numInputEvents = 0
@@ -96,11 +98,37 @@ class CRT(AAlgo):
 
 		if fiducial != 2:
 			return False
+
+		#DT for a perfect detector
+		t1 = self.vertexBox1.t 
+		tf1 = distance((0,0,0),self.vertexBox1.XYZ())/c_light
+		dt1 = t1 - tf1
+		t2 = self.vertexBox2.t 
+		tf2 = distance((0,0,0),self.vertexBox2.XYZ())/c_light
+		dt2 = t2-tf2
+		dt12 = dt1 -dt2
+
+		self.m.log(2, " true time info")
+		self.m.log(2, " t1 =%7.2f ps tf1 = %7.2f ps dt1 =%7.2f ps"%
+			(t1/ps,tf1/ps,dt1/ps))
+		self.m.log(2, " t2 =%7.2f ps tf2 = %7.2f ps dt2 =%7.2f ps"%
+			(t2/ps,tf2/ps,dt2/ps))
+		self.m.log(2, " dt12 =%7.2f "%(dt12/ps))
 		
 		#Compute a TimeMap including the time-ordered sequence of the
 		#first PE of each SiPM hit
 
 		self.timeMap = self.ComputeTimeMap(event)
+		nhitsBox1, nhitsBox2 = self.timeMap.NumberOfHits()
+
+		self.m.log(2, " nhits box1 = %s nhits box2 = %s"%(
+			nhitsBox1,nhitsBox2))
+		self.hman.fill(self.nhitsBox1_histo_name,nhitsBox1)
+		self.hman.fill(self.nhitsBox2_histo_name,nhitsBox2)
+
+		if nhitsBox1 < self.NPE or nhitsBox2 < self.NPE:
+			return False
+		
 
 		self.m.log(3, " Time maps = %s"%(self.timeMap))
 
@@ -171,15 +199,18 @@ class CRT(AAlgo):
 		Compute DT using the first PE
 		"""
 
-		x1,y1,z1,A1,time1 =self.timeMap.timeHit(boxNumber=1,index=0)
-		x2,y2,z2,A2,time2 =self.timeMap.timeHit(boxNumber=2,index=0)
+		hid1,x1,y1,z1,A1,time1 =self.timeMap.timeHit(boxNumber=1,index=0,jitter=self.TJ)
+		hid2,x2,y2,z2,A2,time2 =self.timeMap.timeHit(boxNumber=2,index=0,jitter=self.TJ)
 
-		self.m.log(3,
-			"timeHit 1:xh =%7.2f mm,yh =%7.2f mm,zh =%7.2f mm, A = %7.2f pes t= %7.2f ps"%(
-			x1/mm,y1/mm,z1/mm,A1,time1/ps))
-		self.m.log(3,
-			"timeHit 2:xh =%7.2f mm,yh =%7.2f mm,zh =%7.2f mm, A = %7.2f pes t= %7.2f ps"%(
-			x2/mm,y2/mm,z2/mm,A2,time2/ps))
+		#time1 = time1 - self.vertexBox1.t
+		#time2 = time2 - self.vertexBox2.t
+
+		self.m.log(2,
+			"timeHit 1: hid =%d xh =%7.2f mm,yh =%7.2f mm,zh =%7.2f mm, A = %7.2f pes t= %7.2f ps"%(
+			hid1, x1/mm,y1/mm,z1/mm,A1,time1/ps))
+		self.m.log(2,
+			"timeHit 2: hid =%d xh =%7.2f mm,yh =%7.2f mm,zh =%7.2f mm, A = %7.2f pes t= %7.2f ps"%(
+			hid2, x2/mm,y2/mm,z2/mm,A2,time2/ps))
 
 		self.hman.fill(self.T0Box1_histo_name,time1/ps)
 		self.hman.fill(self.T0Box2_histo_name,time2/ps)
@@ -187,15 +218,15 @@ class CRT(AAlgo):
 		self.hman.fill(self.T0Box1MinusT0Box2_histo_name,(time1-time2)/ps) 
 			
 		dbox1 = distance((x1,y1,z1),self.vertexBox1.XYZ())
-		tpath1 = dbox1/c_light
+		tpath1 = dbox1*self.lxe.RefractionIndexUV()/c_light
 
 		dbox2 = distance((x2,y2,z2),self.vertexBox2.XYZ())
-		tpath2 = dbox2/c_light
+		tpath2 = dbox2*self.lxe.RefractionIndexUV()/c_light
 
-		self.m.log(3,
+		self.m.log(2,
 			"dbox1 =%7.2f mm,tpath1= %7.2f ps, time1 -tpath1 = %7.2f ps "%(
 			dbox1/mm,tpath1/ps,(time1 - tpath1)/ps))
-		self.m.log(3,
+		self.m.log(2,
 			"dbox2 =%7.2f mm,tpath2= %7.2f ps, time2 -tpath2 = %7.2f ps "%(
 			dbox2/mm,tpath2/ps,(time2 - tpath2)/ps))
 
@@ -207,10 +238,22 @@ class CRT(AAlgo):
 		self.hman.fill(self.TBox2_histo_name,tpath2/ps)
 		self.hman.fill(self.Time2MinusTBox2_histo_name,(time2 - tpath2)/ps)
 
-		dt1 = time1 - tpath1
-		dt2 = time2 - tpath2
-		dt = dt1 - dt2
-		return dt
+		tg1 = time1 - tpath1
+		tg2 = time2 - tpath2
+		tf1 = distance((0,0,0),self.vertexBox1.XYZ())/c_light
+		tf2 = distance((0,0,0),self.vertexBox2.XYZ())/c_light
+
+		dt1 = abs(tg1 - tf1)
+		dt2 = abs(tg2 - tf2)
+		dt12 = dt1 - dt2
+
+		self.m.log(2, " +++Reco time info+++++")
+		self.m.log(2, " tg1 =%7.2f ps tf1 = %7.2f ps dt1 =%7.2f ps"%
+			(tg1/ps,tf1/ps,dt1/ps))
+		self.m.log(2, " tg2 =%7.2f ps tf2 = %7.2f ps dt2 =%7.2f ps"%
+			(tg2/ps,tf2/ps,dt2/ps))
+		self.m.log(2, " dt12 =%7.2f "%(dt12/ps))
+		return dt12
 
 ###########################################################
 	def DNthPe(self,peIndex):
@@ -218,8 +261,14 @@ class CRT(AAlgo):
 		Compute DT using the PE with peIndex (=0 is first PE)
 		"""
 
-		x1,y1,z1,A1,time1 =self.timeMap.timeHit(boxNumber=1,index=peIndex)
-		x2,y2,z2,A2,time2 =self.timeMap.timeHit(boxNumber=2,index=peIndex)
+		hid1,x1,y1,z1,A1,time1 =self.timeMap.timeHit(boxNumber=1,index=peIndex,
+			jitter=self.TJ)
+		hid2,x2,y2,z2,A2,time2 =self.timeMap.timeHit(boxNumber=2,index=peIndex, 
+			jitter=self.TJ)
+
+		#time1 = time1 - self.vertexBox1.t
+		#time2 = time2 - self.vertexBox2.t
+
 
 		self.m.log(3,
 			"timeHit 1:xh =%7.2f mm,yh =%7.2f mm,zh =%7.2f mm, A = %7.2f pes t= %7.2f ps"%(
@@ -241,9 +290,11 @@ class CRT(AAlgo):
 			"dbox2 =%7.2f mm,tpath2= %7.2f ps, time2 -tpath2 = %7.2f ps "%(
 			dbox2/mm,tpath2/ps,(time2 - tpath2)/ps))
 
-		dt1 = time1 - tpath1
-		dt2 = time2 - tpath2
-		dt = dt1 - dt2
+		# dt1 = time1 - tpath1
+		# dt2 = time2 - tpath2
+		# dt = dt1 - dt2
+
+		dt = time1 - time2
 		return dt
 
 ############################################################
@@ -260,8 +311,8 @@ class CRT(AAlgo):
 		primaryParticles = PrimaryParticles(event)
 		self.m.log(2, ' number of primary Particles =%d '%(len(primaryParticles)))
 		
-		vertexBox1=Point3D()
-		vertexBox2=Point3D()
+		vertexBox1=Point4D()
+		vertexBox2=Point4D()
 		fid = 0
 		for pparticle in primaryParticles:
 			self.m.log(2, '\n+++primary particle+++\n')
@@ -291,6 +342,7 @@ class CRT(AAlgo):
 				vertexBox1.x = x
 				vertexBox1.y = y
 				vertexBox1.z = z
+				vertexBox1.t = particleTime(pparticle)
 				fid+=1
 			
 			elif self.fbox2.Active((x,y,z)) == True:
@@ -306,6 +358,7 @@ class CRT(AAlgo):
 				vertexBox2.x = x
 				vertexBox2.y = y
 				vertexBox2.z = z
+				vertexBox2.t = particleTime(pparticle)
 				fid+=1
 			else:
 				self.m.log(2,'gamma not found in box1 or in box2')
@@ -336,8 +389,8 @@ class CRT(AAlgo):
 			yh = hit.GetPosition().y()
 			zh = hit.GetPosition().z()
 			Ah = hit.GetAmplitude()
-			self.m.log(3, " hit, ID = ", hid)
-			self.m.log(3, ' xh =%7.2f mm, yh =%7.2f mm, zh =%7.2f mm Q =%d pes '%(
+			self.m.log(4, " hit, ID = ", hid)
+			self.m.log(4, ' xh =%7.2f mm, yh =%7.2f mm, zh =%7.2f mm Q =%d pes '%(
 			xh/mm,yh/mm,zh/mm,Ah))
 
 			self.m.log(4, " waveform for hit ID = %d"%(hit.GetSensorID()))
@@ -485,6 +538,23 @@ class CRT(AAlgo):
 		self.hman.fetch(
 			self.Fiducial_histo_name).GetXaxis().SetTitle(
 			"Fiducial interactions")
+
+		self.nhitsBox1_histo_desc = "nhitsBox1"
+		self.nhitsBox1_histo_name = self.alabel(self.nhitsBox1_histo_desc)
+		self.hman.h1(self.nhitsBox1_histo_name, self.nhitsBox1_histo_desc, 
+			100, 0, 200)
+		self.hman.fetch(
+			self.nhitsBox1_histo_name).GetXaxis().SetTitle(
+			"Number of sensor hits in box1")
+
+		self.nhitsBox2_histo_desc = "nhitsBox2"
+		self.nhitsBox2_histo_name = self.alabel(self.nhitsBox2_histo_desc)
+		self.hman.h1(self.nhitsBox2_histo_name, self.nhitsBox2_histo_desc, 
+			100, 0, 200)
+		self.hman.fetch(
+			self.nhitsBox2_histo_name).GetXaxis().SetTitle(
+			"Number of sensor hits in box2")
+
 
 		self.XYZBox1_histo_desc = "XYZBox1"
 		self.XYZBox1_histo_name = self.alabel(self.XYZBox1_histo_desc)
