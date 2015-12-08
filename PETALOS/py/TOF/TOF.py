@@ -82,7 +82,8 @@ class TimeMap(object):
 		time = values[4]
 
 		if jitter > 0:
-			time += rnd.uniform(-1.,1.)*jitter
+			
+			time += rnd.gauss(0, jitter)
 
 		#print "boxNumber =%d"%(boxNumber)
 		#print "x,y,z,A,time",x,y,z,A,time

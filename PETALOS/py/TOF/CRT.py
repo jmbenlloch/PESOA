@@ -37,8 +37,14 @@ class CRT(AAlgo):
   		fboxCoord1 =self.loadCoord("FBox1V")
   		fboxCoord2 =self.loadCoord("FBox2V")
   		self.QE = self.doubles["QE"]  #quantum efficiency
-  		self.TJ = self.doubles["JITTER"]*ps  #time jitter of SiPM + ASIC
+  		self.SPTR = self.doubles["SPTR"]*ps  #single photon time resolution
+  		self.ASIC= self.doubles["ASIC"]*ps  #ASIC contribution
+  		 
   		self.NPE = self.ints["NPE"]   #number of pe for time average
+  		self.NSIPM = self.ints["NSIPM"]   #number of SiPMs per box
+
+  		#time jitter of SiPM + ASIC
+  		self.TJ = sqrt(self.SPTR**2+self.ASIC**2)
 
   		self.box1ID=self.vints["Box1Id"]
   		self.box2ID=self.vints["Box2Id"] 
@@ -119,7 +125,7 @@ class CRT(AAlgo):
 		self.hman.fill(self.nhitsBox1_histo_name,nhitsBox1)
 		self.hman.fill(self.nhitsBox2_histo_name,nhitsBox2)
 
-		if nhitsBox1 < self.NPE or nhitsBox2 < self.NPE:
+		if nhitsBox1 < self.NSIPM or nhitsBox2 < self.NSIPM:
 			return False
 		
 		self.m.log(4, " Time maps = %s"%(self.timeMap))

@@ -38,21 +38,21 @@ CNTJob WRITER S gateWriter
 
 #------------- log file -------------#
 CNTJob LOG I 0
-CNTJob FLOG S /Users/jjgomezcadenas/Development/PETALO/WORK/log/tof_electrons_refl95_VUV3mm_z5cm.log
+CNTJob FLOG S /Users/jjgomezcadenas/Development/PETALO/WORK/log/tof_electrons_refl95_VUV3mm_z5cm_QE_0.20_SPTR_80_ASIC_30.log
 
 #---------- histogram file ----------#
 CNTJob HISTOS 1
-CNTJob FHISTOS S /Users/jjgomezcadenas/Development/PETALO/WORK/histo/tof_electrons_refl95_VUV3mm_z5cm_QE_1_histos.root
+CNTJob FHISTOS S /Users/jjgomezcadenas/Development/PETALO/WORK/histo/tof_electrons_refl95_VUV3mm_z5cm_QE_0.20_SPTR_80_ASIC_30_histos.root
 
 #---------- histogram file ----------#
 CNTJob TREES 0
-CNTJob FTREES S /Users/jjgomezcadenas/Development/PETALO/WORK/tree/tof_electrons_refl95_VUV3mm_z5cm_QE_1_trees.root
+CNTJob FTREES S /Users/jjgomezcadenas/Development/PETALO/WORK/tree/tof_electrons_refl95_VUV3mm_z5cm_QE_0.20_SPTR_80_ASIC_30_trees.root
 
 #------ SAVE EVENTS IN OUTPUT FILE ----------# 
 CNTJob SAVE I 0
 
 #---------- NUMBER OF EVENTS TO ANALYZE ----------#
-CNTJob NEVENTS I 5000
+CNTJob NEVENTS I 10000
 
 #---------- FIRST EVENT TO ANALYZE ----------#
 CNTJob FEVENT I 0
@@ -70,9 +70,11 @@ CRT
 CRT VLEVEL I 1
 CRT Debug I 0
 
+CRT NSIPM I 128
 CRT NPE I 10
-CRT QE D 1.0
-CRT JITTER D 0
+CRT QE D 0.20
+CRT SPTR D 80
+CRT ASIC D 30
 
 CRT Box1Id IV 4
 0
@@ -168,19 +170,19 @@ CRT FBox1V4 DV 3
 CRT FBox1V5 DV 3 
 -12.0 
 -12.0 
--129.
+-149.
 CRT FBox1V6 DV 3 
 -12.0 
 12.0 
--129.
+-149.
 CRT FBox1V7 DV 3 
 12.0
 -12.0 
--129.
+-149.
 CRT FBox1V8 DV 3 
 12.0
 12.0 
--129.
+-149.
 CRT FBox2V1 DV 3 
 -12.0 
 -12.0 
@@ -200,16 +202,16 @@ CRT FBox2V4 DV 3
 CRT FBox2V5 DV 3 
 -12.0 
 -12.0 
-129.
+149.
 CRT FBox2V6 DV 3 
 -12.0
 12.0
-129. 
+149. 
 CRT FBox2V7 DV 3 
 12.0 
 -12.0 
-129.
+149.
 CRT FBox2V8 DV 3 
 12.0
 12.0 
-129.
+149.
