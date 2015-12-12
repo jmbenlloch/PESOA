@@ -32,6 +32,9 @@ class PhotonGenerator:
 		self.FTAU3 = TF1("FTAU3","exp(-x/[0])",0,10*self.lxe.tau3/ns)
 		self.FTAU3.SetParameter(0,self.lxe.tau3/ns)
 
+		self.FR = TF1("FR","exp(-x/[0])",0,10*self.lxe.tau3/ns)
+		self.FTAU3.SetParameter(0,self.lxe.tau3/ns)
+
 		self.m.log(1,'lxe = %s  '%(lxe))
 		self.ntau1 = 0.
 		self.ntau2 = 0.

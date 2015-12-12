@@ -6,8 +6,6 @@ from Geometry import *
 from TOF import *
 from LXe import *
 import random as rnd
-import array
-from Centella.treeManager import *
 
 """
 This algorithm computes the Coincidence Resolution Time. 
@@ -30,17 +28,14 @@ class CRT(AAlgo):
 		AAlgo.__init__(self, param, level, self.name, 0, label, kargs)
 
     ### PARAMETERS
-		
-		#self.FTREES = self.strings["FTREES"]
-		self.debug = self.ints["Debug"]  #used to stop program at key break points
+    # Box coordinates
 
-		#load coordinates of box and fiducial box
-
-		boxCoord1 =self.loadCoord("Box1V")
+  		#print self.vdoubles
+  		self.debug = self.ints["Debug"]
+  		boxCoord1 =self.loadCoord("Box1V")
   		boxCoord2 =self.loadCoord("Box2V")
   		fboxCoord1 =self.loadCoord("FBox1V")
   		fboxCoord2 =self.loadCoord("FBox2V")
-
   		self.QE = self.doubles["QE"]  #quantum efficiency
   		self.DTMAX = self.doubles["DTMAX"]*ps  #max diff wrt first pes
   		self.SPTR = self.doubles["SPTR"]*ps  #single photon time resolution
@@ -52,7 +47,7 @@ class CRT(AAlgo):
   		#time jitter of SiPM + ASIC
   		self.TJ = sqrt(self.SPTR**2+self.ASIC**2)
 
-  		self.box1ID=self.vints["Box1Id"]  #ids of SiPMs in box1
+  		self.box1ID=self.vints["Box1Id"]
   		self.box2ID=self.vints["Box2Id"] 
 
 		self.box1 = Box(boxCoord1)
@@ -73,16 +68,71 @@ class CRT(AAlgo):
 		self.lxe = LXe() #lxe properties
 		print self.lxe
 
-		
 		if self.debug == 1:
 			wait()
 
+		fid = array.array('f',[0.]) #0,1 or 2 gammas found in boxes
+
+		xb1= array.array('f',[0.])   # (x,y,z) vertex in box1
+		yb1= array.array('f',[0.])
+		zb1= array.array('f',[0.])
+		tpb1= array.array('f',[0.])  # time of particle in box1
+		photSiPMb1= array.array('f',[0.])  # photons/SiPM
+		pesSiPMb1= array.array('f',[0.])  # photons/SiPM
+		nPhotb1= array.array('f',[0.])  # total photons in b1
+		nhitsb1 = array.array('f',[0.]) #number of SiPM with signal in box1
+		tFstSiPMb1 = array.array('f',[0.]) #time of first SiPM in box1
+		dVtxFstSiPMb1 = array.array('f',[0.]) #distance vertex-sipm in box1 1stpe
+		tVtxFstSiPMb1 = array.array('f',[0.]) #time vertex- first SiPM
+
+		xb2= array.array('f',[0.])   # (x,y,z) vertex in box2
+		yb2= array.array('f',[0.])
+		zb2= array.array('f',[0.])
+		tpb2= array.array('f',[0.])  # time of particle in box2
+		photSiPMb2= array.array('f',[0.])
+		pesSiPMb2= array.array('f',[0.])  # photons/SiPM
+		nPhotb2= array.array('f',[0.])
+		nhitsb2 = array.array('f',[0.])
+		tFstSiPMb2 = array.array('f',[0.])
+		dVtxFstSiPMb2 = array.array('f',[0.])
+		tVtxFstSiPMb2 = array.array('f',[0.])
+
+		dtFstSiPM = array.array('f',[0.]) # Dt computed with first SiPM
+
+		tman.book('CRT',"Coincidence Resoltion Time")
+		tman.addBranch('CRT','fid',fid,dim=1)
+		tman.addBranch('CRT','dtFstSiPM',dtFstSiPM,dim=1)
+
+		tman.addBranch('CRT','xb1',xb1,dim=1)
+		tman.addBranch('CRT','yb1',yb1,dim=1)
+		tman.addBranch('CRT','zb1',zb1,dim=1)
+		tman.addBranch('CRT','tpb1',tpb1,dim=1)
+		tman.addBranch('CRT','photSiPMb1',photSiPMb1,dim=1)
+		tman.addBranch('CRT','pesSiPMb1',pesSiPMb1,dim=1)
+		tman.addBranch('CRT','tFstSiPMb1',tFstSiPMb1,dim=1)
+		tman.addBranch('CRT','dVtxFstSiPMb1',dVtxFstSiPMb1,dim=1)
+		tman.addBranch('CRT','tVtxFstSiPMb1',tVtxFstSiPMb1,dim=1)
+		tman.addBranch('CRT','nPhotb1',nPhotb1,dim=1)
+		tman.addBranch('CRT','nhitsb1',nhitsb1,dim=1)
+
+		tman.addBranch('CRT','xb2',xb2,dim=1)
+		tman.addBranch('CRT','yb2',yb2,dim=1)
+		tman.addBranch('CRT','zb2',zb2,dim=1)
+		tman.addBranch('CRT','tpb2',tpb2,dim=1)
+		tman.addBranch('CRT','photSiPMb2',photSiPMb2,dim=1)
+		tman.addBranch('CRT','pesSiPMb2',pesSiPMb2,dim=1)
+		tman.addBranch('CRT','tFstSiPMb2',tFstSiPMb2,dim=1)
+		tman.addBranch('CRT','dVtxFstSiPMb2',dVtxFstSiPMb2,dim=1)
+		tman.addBranch('CRT','tVtxFstSiPMb2',tVtxFstSiPMb2,dim=1)
+		tman.addBranch('CRT','nPhotb2',nPhotb2,dim=1)
+		tman.addBranch('CRT','nhitsb2',nhitsb2,dim=1)
+	
+   
 
 	############################################################		
 	def initialize(self):
 
 		self.m.log(1, 'Initialize()')
-		self.BookTree()
 		
 		### Defining histos
 		# Event energy histogram
@@ -112,10 +162,7 @@ class CRT(AAlgo):
 
 		fiducial = self.Fiducial(event)
 		self.hman.fill(self.Fiducial_histo_name,fiducial)
-		self.fid[0] = fiducial 
-
-		if self.debug == 1:
-			wait()
+		fid[0] = fiducial 
 
 		if fiducial != 2:
 			return False
@@ -126,18 +173,15 @@ class CRT(AAlgo):
 
 		self.ComputeTimeMap(event)
 		nhitsBox1 = self.timeMap.NumberOfSiPmHits(box=1)
-		nhitsBox2 = self.timeMap.NumberOfSiPmHits(box=2)
+		nhitsBox2 = self.timeMap.NumberOfSiPMHits(boxNumber=2)
 
 		self.m.log(2, " nhits box1 = %s nhits box2 = %s"%(
 			nhitsBox1,nhitsBox2))
 
 		self.hman.fill(self.nhitsBox1_histo_name,nhitsBox1)
 		self.hman.fill(self.nhitsBox2_histo_name,nhitsBox2)
-		self.nhitsb1[0] = nhitsBox1
-		self.nhitsb2[0] = nhitsBox2
-
-		if self.debug == 1:
-			wait()
+		nhitsb1[0] = nhitsBox1
+		nhitsb2[0] = nhitsBox2
 
 		if nhitsBox1 < self.NSIPM or nhitsBox2 < self.NSIPM:
 			return False
@@ -172,7 +216,6 @@ class CRT(AAlgo):
 			wait()	
 
 		self.numOutputEvents += 1
-		self.tman.fill('CRT')
 		return True
 
 ############################################################
@@ -186,8 +229,7 @@ class CRT(AAlgo):
 
 		self.logman["USER"].ints[self.alabel("InputEvents")] = self.numInputEvents
 		self.logman["USER"].ints[self.alabel("OutputEvents")] = self.numOutputEvents
-	
-		#self.tman.save(file_name=self.FTREES)
+		
 
 		return
 
@@ -238,10 +280,10 @@ class CRT(AAlgo):
 				vertexBox1.z = z
 				vertexBox1.t = particleTime(pparticle)
 
-				self.xb1[0]=x/mm
-				self.yb1[0]=y/mm
-				self.zb1[0]=z/mm
-				self.tpb1[0]=vertexBox1.t/ps
+				xb1[0]=x/mm
+				yb1[0]=y/mm
+				zb1[0]=z/mm
+				tpb1[0]=vertexBox1.t/ps
 
 				fid+=1
 			
@@ -260,10 +302,10 @@ class CRT(AAlgo):
 				vertexBox2.z = z
 				vertexBox2.t = particleTime(pparticle)
 
-				self.xb2[0]=x/mm
-				self.yb2[0]=y/mm
-				self.zb2[0]=z/mm
-				self.tpb2[0]=vertexBox2.t/ps
+				xb2[0]=x/mm
+				yb2[0]=y/mm
+				zb2[0]=z/mm
+				tpb2[0]=vertexBox2.t/ps
 
 				fid+=1
 			else:
@@ -312,18 +354,16 @@ class CRT(AAlgo):
 
 			sipmhit = SiPMHit(hid,xh,yh,zh,Ah,time0,self.QE,self.DTMAX)
 
-			self.m.log(5, " ++++++hit = %s"%(sipmhit))
-			
-			if self.debug == 2:
-				wait()
+			self.m.log(5, " ++++++hit = %s", sipmhit)
 			
 			if self.boxId(hid) == 1:
-				
+				self.hman.fill(self.npesBOX1_histo_name,Ah)
 				ng1+=Ah
-				self.photSiPMb1[0]=Ah
+				photSiPMb1[0]=Ah
 			else:
+				self.hman.fill(self.npesBOX2_histo_name,Ah)
 				ng2+=Ah
-				self.photSiPMb2[0]=Ah
+				photSiPMb2[0]=Ah
 			
 			# keep all the pes within DTMAX (~200 ps) of first pe
 
@@ -338,9 +378,6 @@ class CRT(AAlgo):
 				
 				self.m.log(6, "pe number = %d tbin = %d time = %7.2f ps A = %7.2f pes"%(
 					np, tbin,time/ps,A))
-
-				self.m.log(6, " DT wrt 1st = %7.2f ps"%((time - time0)/ps))
-					
 				#A is the number of pes in the bin. It is equal to 1
 				# most of the time (because the time bining id very thin)
 				#but it can be a higher number. A is computed assuming QE=1
@@ -354,38 +391,22 @@ class CRT(AAlgo):
 
 				self.m.log(6, " npes = %d, Q = %d "%(
 					npes, Q))
-
 				#is there a real pe in this time bin? otherwise loop
 				if npes < 1:
 					continue  #didn't pass because of finite QE
 				else: #valid pes, keep the time stamp if time within DTMAX
-
-					if abs(time - time0) < self.DTMAX or len(sipmhit.W)==0:
-						sipmhit.W.append(time)
-					else:
-						break 
+					if abs(time - time0) < self.DTMAX:
+						sipmhit.W.append(time) 
 			
-			#sipmhit.Q = Q # one can run over the waveform and get Q
-			sipmhit.Q = Ah*self.QE	
-			self.m.log(5, " ++++++hit again = %s"%(sipmhit))
-
-			if Q == 0: # QE killed this boy
-				continue
-
-			if self.debug == 2:
-				wait()
-
+			sipmhit.Q = Q	
+			self.m.log(5, " ++++++hit again = %s", sipmhit)
 			if self.boxId(hid) == 1:
 				timeMapBox1[hid] = sipmhit
-				self.pesSiPMb1[0] = sipmhit.NumberOfPE()
-				self.dtPESb1[0] = (time - time0)/ps
-				self.hman.fill(self.npesBOX1_histo_name,sipmhit.NumberOfPE())
+				pesSiPMb1[0] = Q
 
 			elif self.boxId(hid) == 2:
 				timeMapBox2[hid] = sipmhit 
-				self.pesSiPMb2[0] = sipmhit.NumberOfPE()
-				self.dtPESb2[0] = (time - time0)/ps
-				self.hman.fill(self.npesBOX2_histo_name,sipmhit.NumberOfPE())
+				pesSiPMb2[0] = Q
 			else:
 				print "error: hit index not in range, hid=%d"%(hid)
 				sys.exit(0)
@@ -393,10 +414,9 @@ class CRT(AAlgo):
 
 		self.hman.fill(self.NGBOX1_histo_name,ng1)
 		self.hman.fill(self.NGBOX2_histo_name,ng2)
-		self.nPhotb1[0]=ng1
-		self.nPhotb2[0]=ng2 
-		
-		
+		nPhotb1[0]=ng1
+		nPhotb2[0]=ng2 
+					
 		# sort the maps according to the time stamp of first pe
 		TimeMapBox1 = sorted(timeMapBox1.items(), key=sortSiPmHits)
 		TimeMapBox2 = sorted(timeMapBox2.items(), key=sortSiPmHits)
@@ -404,12 +424,9 @@ class CRT(AAlgo):
 		self.m.log(5, " sorted time map box1 = ",TimeMapBox1)
 		self.m.log(5, " sorted time map box2 = ",TimeMapBox2)
 
-		self.timeMap.SetSiPmMaps((TimeMapBox1,TimeMapBox2))
-
-		self.m.log(4, " event TimeMap = %s"%(self.timeMap))
 		self.m.log(3, ' ng1 =%7.2f, ng2 =%7.2f '%(ng1,ng2))
-		if self.debug == 1:
-			wait()
+
+		self.timeMap.SetSiPmMaps((TimeMapBox1,TimeMapBox2))
 		
 ###########################################################
 	def DTFirstPe(self):
@@ -419,89 +436,66 @@ class CRT(AAlgo):
 
 		siPMHit1 = self.timeMap.SiPmHit(box=1,index=0)
 		siPMHit2 = self.timeMap.SiPmHit(box=2,index=0)
-		vertexBox1 =self.timeMap.InteractionVertex(box=1)
-		vertexBox2 =self.timeMap.InteractionVertex(box=2)
 
 		self.m.log(3," DTFirstPe: Hit 1 =  %s"%(siPMHit1))
 		self.m.log(3," DTFirstPe: Hit 2 =  %s"%(siPMHit2))
+				
+		self.hman.fill(self.T0Box1_histo_name,siPMHit1.T()/ps)
+		self.hman.fill(self.T0Box2_histo_name,siPMHit2.T()/ps)
+		tFstSiPMb1[0] = siPMHit1.T()/ps
+		tFstSiPMb2[0] = siPMHit2.T()/ps
 
-		DT1 = self.ComputeDT1((0,0,0),vertexBox1.XYZ(),vertexBox2.XYZ())
-		self.m.log(3," DT1 =  %7.2f ps "%(DT1/ps))
-
-		DT2 = self.ComputeDT2(siPMHit1.XYZ(),vertexBox1.XYZ(),
-								   siPMHit2.XYZ(),vertexBox2.XYZ())
-		self.m.log(3," DT2 =  %7.2f ps "%(DT2/ps))
-
-		dtHit12 = self.ComputeDTHit12(siPMHit1.TimeFirstPE(), siPMHit2.TimeFirstPE())  
-		self.m.log(3,"dtHit12 =%7.2f  ps,  "%(dtHit12/ps))
-
-		dt12 = 	(dtHit12 - DT1 - DT2)/2.
-		self.m.log(3,
-			"dt12 =%7.2f  ps,  "%(dt12/ps))
-
-			
-		self.tFstSiPMb1[0] = siPMHit1.TimeFirstPE()/ps
-		self.tFstSiPMb2[0] = siPMHit2.TimeFirstPE()/ps		
-		self.DT1[0]=DT1/ps
-		self.DT2[0]=DT2/ps
-		self.DTHit12[0]=dtHit12/ps
-		self.DT12[0]=dt12/ps		
-		self.hman.fill(self.T0Box1_histo_name,siPMHit1.TimeFirstPE()/ps)
-		self.hman.fill(self.DT1_histo_name,DT1/ps)
-		self.hman.fill(self.DT2_histo_name,DT2/ps)
-		self.hman.fill(self.DTHit12_histo_name,dtHit12/ps)
-
-		return dt12
-
-###########################################################
-	def ComputeDT1(self,v0,v1,v2):
-		"""
-		Compute DT1 --> difference of TOF for the two gammas
-		between vertex and interaction point 
-		"""
-
-		d0v1 = distance(v0,v1)
-		d0v2 = distance(v0,v2)
-		t0v1 = d0v1/c_light
-		t0v2 = d0v2/c_light
-		DT1 = t0v1 -t0v2
-
-		self.m.log(4," d0v1 = %7.2f mm, t0v1 = %7.2f ps "%(d0v1/mm,t0v1/ps))
-		self.m.log(4," d0v2 = %7.2f mm, t0v2 = %7.2f ps "%(d0v2/mm,t0v2/ps))
-
-		return DT1
-
-###########################################################
-	def ComputeDT2(self,vhit1,vertex1,vhit2,vertex2):
-		"""
-		Compute DT2 --> difference of TOF for the VUV photons 
-		propagating from interaction vertex to SiPM in both boxes
-		"""
-
-
-		dbox1 = distance(vhit1,vertex1)
+		dbox1 = distance(siPMHit1.XYZ(),self.vertexBox1.XYZ())
 		tpath1 = dbox1*self.lxe.RefractionIndexUV()/c_light
-		dbox2 = distance(vhit2,vertex2)
+
+		dbox2 = distance(siPMHit2.XYZ(),self.vertexBox2.XYZ())
 		tpath2 = dbox2*self.lxe.RefractionIndexUV()/c_light
-		DT2 = tpath1 - tpath2
 
+		dt = (siPMHit1.T() - tpath1) - (siPMHit2.T() - tpath2)
+
+		dVtxFstSiPMb1[0]=dbox1/mm
+		tVtxFstSiPMb1[0]=tpath1/ps
+		dVtxFstSiPMb2[0]=dbox2/mm
+		tVtxFstSiPMb2[0]=tpath2/ps
+		dtFstSiPM[0] = dt/ps
+
+		self.m.log(3,
+			"DTFirstPe: dbox1 =%7.2f mm,tpath1= %7.2f ps, time1 -tpath1 = %7.2f ps "%(
+			dbox1/mm,tpath1/ps,(siPMHit1.T() - tpath1)/ps))
+		self.m.log(3,
+			"DTFirstPe: dbox2 =%7.2f mm,tpath2= %7.2f ps, time2 -tpath2 = %7.2f ps "%(
+			dbox2/mm,tpath2/ps,(siPMHit2.T() - tpath2)/ps))
+
+		self.m.log(3,
+			"DTFirstPe: dt =%7.2f ps "%(dt/ps))
+
+		self.hman.fill(self.DBox1_histo_name,dbox1/mm)
 		self.hman.fill(self.TBox1_histo_name,tpath1/ps)
+		self.hman.fill(self.Time1MinusTBox1_histo_name,(siPMHit1.T() - tpath1)/ps)
+
+		self.hman.fill(self.DBox2_histo_name,dbox2/mm)
+		self.hman.fill(self.TBox2_histo_name,tpath2/ps)
+		self.hman.fill(self.Time2MinusTBox2_histo_name,(siPMHit2.T() - tpath2)/ps)
+
+		# tg1 = siPMHit1.T() - tpath1
+		# tg2 = siPMHit2.T() - tpath2
+		# tf1 = distance((0,0,0),self.vertexBox1.XYZ())/c_light
+		# tf2 = distance((0,0,0),self.vertexBox2.XYZ())/c_light
+
+		# dt1 = abs(tg1 - tf1)
+		# dt2 = abs(tg2 - tf2)
+		#dt12 = dt1 - dt2
 		
-		self.m.log(4,
-			"dbox1 =%7.2f mm,tpath1= %7.2f ps,  "%(dbox1/mm,tpath1/ps))
-		self.m.log(4,
-			"dbox2 =%7.2f mm,tpath2= %7.2f ps,  "%(dbox2/mm,tpath2/ps))
+		
 
-		return DT2
-###########################################################
-	def ComputeDTHit12(self,thitBox1, thitBox2):
-		"""
-		Compute DTHit12: time difference between hit in box1 
-		and hit in box2
-		"""
+		# self.m.log(3, " +++DTFirstPe+++++")
+		# self.m.log(3, " tg1 =%7.2f ps tf1 = %7.2f ps dt1 =%7.2f ps"%
+		# 	(tg1/ps,tf1/ps,dt1/ps))
+		# self.m.log(3, " tg2 =%7.2f ps tf2 = %7.2f ps dt2 =%7.2f ps"%
+		# 	(tg2/ps,tf2/ps,dt2/ps))
+		# self.m.log(3, " dt12 =%7.2f "%(dt12/ps))
 
-		dtHit12 = thitBox1 - thitBox2
-		return dtHit12
+		return dt
 
 # ###########################################################
 # 	def dtNPE(self, dt1):
@@ -600,6 +594,51 @@ class CRT(AAlgo):
 
 # 		return dt12
 
+# ###########################################################
+# 	def DNthPe(self,peIndex):
+# 		"""
+# 		Compute DT using the PE with peIndex (=0 is first PE)
+# 		"""
+		
+# 		siPMHit1 = self.timeMap.timeHit(boxNumber=1,index=peIndex,jitter=self.TJ)
+# 		siPMHit2 = self.timeMap.timeHit(boxNumber=2,index=peIndex, jitter=self.TJ)
+
+# 		self.m.log(3," DNthPe: Hit 1 =  %s"%(siPMHit1))
+# 		self.m.log(3," DNthPe: Hit 2 =  %s"%(siPMHit2))
+				
+# 		dbox1 = distance(siPMHit1.XYZ(),self.vertexBox1.XYZ())
+# 		tpath1 = dbox1*self.lxe.RefractionIndexUV()/c_light
+
+# 		dbox2 = distance(siPMHit2.XYZ(),self.vertexBox2.XYZ())
+# 		tpath2 = dbox2*self.lxe.RefractionIndexUV()/c_light
+
+# 		self.m.log(3,
+# 			"DNthPe: dbox1 =%7.2f mm,tpath1= %7.2f ps, time1 -tpath1 = %7.2f ps "%(
+# 			dbox1/mm,tpath1/ps,(siPMHit1.T() - tpath1)/ps))
+# 		self.m.log(3,
+# 			"DNthPe: dbox2 =%7.2f mm,tpath2= %7.2f ps, time2 -tpath2 = %7.2f ps "%(
+# 			dbox2/mm,tpath2/ps,(siPMHit2.T() - tpath2)/ps))
+
+
+# 		tg1 = siPMHit1.T() - tpath1
+# 		tg2 = siPMHit2.T() - tpath2
+# 		tf1 = distance((0,0,0),self.vertexBox1.XYZ())/c_light
+# 		tf2 = distance((0,0,0),self.vertexBox2.XYZ())/c_light
+
+# 		dt1 = abs(tg1 - tf1)
+# 		dt2 = abs(tg2 - tf2)
+# 		dt12 = dt1 - dt2
+
+# 		self.m.log(3, " +++DNthPe+++++")
+# 		self.m.log(3, " tg1 =%7.2f ps tf1 = %7.2f ps dt1 =%7.2f ps"%
+# 			(tg1/ps,tf1/ps,dt1/ps))
+# 		self.m.log(3, " tg2 =%7.2f ps tf2 = %7.2f ps dt2 =%7.2f ps"%
+# 			(tg2/ps,tf2/ps,dt2/ps))
+# 		self.m.log(3, " dt12 =%7.2f "%(dt12/ps))
+
+# 		return dt12
+
+
 
 	############################################################
 	def particleInfo(self, lvl, particle):
@@ -660,78 +699,20 @@ class CRT(AAlgo):
 
 		return 0
 
-############################################################
-	def BookTree(self):
-	
-		self.fid = array.array('f',[0.]) #0,1 or 2 gammas found in boxes
 
-		self.xb1= array.array('f',[0.])   # (x,y,z) vertex in box1
-		self.yb1= array.array('f',[0.])
-		self.zb1= array.array('f',[0.])
-		self.tpb1= array.array('f',[0.])  # time of particle in box1
-		self.photSiPMb1= array.array('f',[0.])  # photons/SiPM
-		self.pesSiPMb1= array.array('f',[0.])  # pes/SiPM
-		self.nPhotb1= array.array('f',[0.])  # total photons in b1
-		self.nhitsb1 = array.array('f',[0.]) #number of SiPM with signal in box1
-		self.tFstSiPMb1 = array.array('f',[0.]) #time of first SiPM in box1
-		self.dtPESb1  = array.array('f',[0.]) #dt of pes with first SiPM in box1
-		
-		
-		self.xb2= array.array('f',[0.])   # (x,y,z) vertex in box2
-		self.yb2= array.array('f',[0.])
-		self.zb2= array.array('f',[0.])
-		self.tpb2= array.array('f',[0.])  # time of particle in box2
-		self.photSiPMb2= array.array('f',[0.])
-		self.pesSiPMb2= array.array('f',[0.])  # photons/SiPM
-		self.nPhotb2= array.array('f',[0.])
-		self.nhitsb2 = array.array('f',[0.])
-		self.tFstSiPMb2 = array.array('f',[0.])
-		self.dtPESb2  = array.array('f',[0.])
-		
-		self.DT1 = array.array('f',[0.]) # (d(0,v1) - d(0,v2))/c
-		self.DT2 = array.array('f',[0.]) #(d(v1,hit1) - d(v2,hit2))*(n/c)
-		self.DTHit12 = array.array('f',[0.]) # time (hit1 - hit2)
-		self.DT12 = array.array('f',[0.]) # DT (first pes)
-
-		self.dtFstSiPM = array.array('f',[0.]) # Dt computed with first SiPM
-
-		self.tman.book('CRT',"Coincidence Resoltion Time")
-		self.tman.addBranch('CRT','fid',self.fid,dim=1)
-		self.tman.addBranch('CRT','dtFstSiPM',self.dtFstSiPM,dim=1)
-		self.tman.addBranch('CRT','DT1',self.DT1,dim=1)
-		self.tman.addBranch('CRT','DT2',self.DT2,dim=1)
-		self.tman.addBranch('CRT','DTHit122',self.DTHit12,dim=1)
-		self.tman.addBranch('CRT','DT12',self.DT12,dim=1)
-
-		self.tman.addBranch('CRT','xb1',self.xb1,dim=1)
-		self.tman.addBranch('CRT','yb1',self.yb1,dim=1)
-		self.tman.addBranch('CRT','zb1',self.zb1,dim=1)
-		self.tman.addBranch('CRT','tGammab1',self.tpb1,dim=1)
-		self.tman.addBranch('CRT','photSiPMb1',self.photSiPMb1,dim=1)
-		self.tman.addBranch('CRT','pesSiPMb1',self.pesSiPMb1,dim=1)
-		self.tman.addBranch('CRT','tFstSiPMb1',self.tFstSiPMb1,dim=1)
-		self.tman.addBranch('CRT','dtPESb1',self.dtPESb1,dim=1)
-
-		self.tman.addBranch('CRT','nPhotb1',self.nPhotb1,dim=1)
-		self.tman.addBranch('CRT','nhitsb1',self.nhitsb1,dim=1)
-
-		self.tman.addBranch('CRT','xb2',self.xb2,dim=1)
-		self.tman.addBranch('CRT','yb2',self.yb2,dim=1)
-		self.tman.addBranch('CRT','zb2',self.zb2,dim=1)
-		self.tman.addBranch('CRT','tGammab2',self.tpb2,dim=1)
-		self.tman.addBranch('CRT','photSiPMb2',self.photSiPMb2,dim=1)
-		self.tman.addBranch('CRT','pesSiPMb2',self.pesSiPMb2,dim=1)
-		self.tman.addBranch('CRT','tFstSiPMb2',self.tFstSiPMb2,dim=1)
-		self.tman.addBranch('CRT','dtPESb2',self.dtPESb2,dim=1)
-		self.tman.addBranch('CRT','nPhotb2',self.nPhotb2,dim=1)
-		self.tman.addBranch('CRT','nhitsb2',self.nhitsb2,dim=1)
-	
-   
 	############################################################		
 	def Histos(self):
 		"""
 		book the histograms for the algo 
 		"""
+		TrueDT_histo_desc = "TrueDT"
+		self.TrueDT_histo_name = self.alabel(TrueDT_histo_desc)
+		self.hman.h1(self.TrueDT_histo_name, TrueDT_histo_desc, 
+			20, -5, 5)
+		self.hman.fetch(
+			self.TrueDT_histo_name).GetXaxis().SetTitle(
+			"True DT box1 - box2 ps")
+
 		Fiducial_histo_desc = "Fiducial"
 		self.Fiducial_histo_name = self.alabel(Fiducial_histo_desc)
 		self.hman.h1(self.Fiducial_histo_name, Fiducial_histo_desc, 
@@ -740,10 +721,11 @@ class CRT(AAlgo):
 			self.Fiducial_histo_name).GetXaxis().SetTitle(
 			"Fiducial interactions")
 
+
 		NGBOX1_histo_desc = "NGBOX1"
 		self.NGBOX1_histo_name = self.alabel(NGBOX1_histo_desc)
 		self.hman.h1(self.NGBOX1_histo_name, NGBOX1_histo_desc, 
-			100, 0, 40000)
+			100, 0, 30000)
 		self.hman.fetch(
 			self.NGBOX1_histo_name).GetXaxis().SetTitle(
 			"Number of gammas in box1")
@@ -751,7 +733,7 @@ class CRT(AAlgo):
 		NGBOX2_histo_desc = "NGBOX2"
 		self.NGBOX2_histo_name = self.alabel(NGBOX2_histo_desc)
 		self.hman.h1(self.NGBOX2_histo_name, NGBOX2_histo_desc, 
-			100, 0, 40000)
+			100, 0, 30000)
 		self.hman.fetch(
 			self.NGBOX2_histo_name).GetXaxis().SetTitle(
 			"Number of gammas in box2")
@@ -759,7 +741,7 @@ class CRT(AAlgo):
 		npesBOX1_histo_desc = "NPESBOX1"
 		self.npesBOX1_histo_name = self.alabel(npesBOX1_histo_desc)
 		self.hman.h1(self.npesBOX1_histo_name, npesBOX1_histo_desc, 
-			100, 0, 500)
+			100, 0, 300)
 		self.hman.fetch(
 			self.npesBOX1_histo_name).GetXaxis().SetTitle(
 			"Number of pes/SiPM in box1")
@@ -767,7 +749,7 @@ class CRT(AAlgo):
 		npesBOX2_histo_desc = "NPESBOX2"
 		self.npesBOX2_histo_name = self.alabel(npesBOX2_histo_desc)
 		self.hman.h1(self.npesBOX2_histo_name, npesBOX2_histo_desc, 
-			100, 0, 500)
+			100, 0, 300)
 		self.hman.fetch(
 			self.npesBOX2_histo_name).GetXaxis().SetTitle(
 			"Number of pes/SiPM in box2")
@@ -816,7 +798,62 @@ class CRT(AAlgo):
 			self.ZBox1_histo_name).GetXaxis().SetTitle(
 			"Z interaction box 1 (mm)")
 
-		
+		T0Box1_histo_desc = "T0Box1"
+		self.T0Box1_histo_name = self.alabel(T0Box1_histo_desc)
+		self.hman.h1(self.T0Box1_histo_name, T0Box1_histo_desc, 
+			50, 300, 800)
+		self.hman.fetch(
+			self.T0Box1_histo_name).GetXaxis().SetTitle(
+			"t0 box1 (ps)")
+
+		DBox1_histo_desc = "DBox1"
+		self.DBox1_histo_name = self.alabel(DBox1_histo_desc)
+		self.hman.h1(self.DBox1_histo_name, DBox1_histo_desc, 
+			50, 0, 50)
+		self.hman.fetch(
+			self.DBox1_histo_name).GetXaxis().SetTitle(
+			"distance T0 hit to vertex box 1 (mm)")
+
+		TBox1_histo_desc = "TBox1"
+		self.TBox1_histo_name = self.alabel(TBox1_histo_desc)
+		self.hman.h1(self.TBox1_histo_name, TBox1_histo_desc, 
+			50, 0, 500)
+		self.hman.fetch(
+			self.TBox1_histo_name).GetXaxis().SetTitle(
+			"time T0 hit to vertex box 1 (ps)")
+
+		DBox2_histo_desc = "DBox2"
+		self.DBox2_histo_name = self.alabel(DBox2_histo_desc)
+		self.hman.h1(self.DBox2_histo_name, DBox2_histo_desc, 
+			50, 0, 50)
+		self.hman.fetch(
+			self.DBox2_histo_name).GetXaxis().SetTitle(
+			"distance T0 hit to vertex box 1 (mm)")
+
+		TBox2_histo_desc = "TBox2"
+		self.TBox2_histo_name = self.alabel(TBox2_histo_desc)
+		self.hman.h1(self.TBox2_histo_name, TBox2_histo_desc, 
+			50, 0, 500)
+		self.hman.fetch(
+			self.TBox2_histo_name).GetXaxis().SetTitle(
+			"time T0 hit to vertex box 2 (ps)")
+
+		Time1MinusTBox1_histo_desc = "Time1MinusTBox1"
+		self.Time1MinusTBox1_histo_name = self.alabel(Time1MinusTBox1_histo_desc)
+		self.hman.h1(self.Time1MinusTBox1_histo_name, Time1MinusTBox1_histo_desc, 
+			50, -500, 500)
+		self.hman.fetch(
+			self.Time1MinusTBox1_histo_name).GetXaxis().SetTitle(
+			"T0 minus tvertex box1 (ps)")
+
+		Time2MinusTBox2_histo_desc = "Time2MinusTBox2"
+		self.Time2MinusTBox2_histo_name = self.alabel(Time2MinusTBox2_histo_desc)
+		self.hman.h1(self.Time2MinusTBox2_histo_name, Time2MinusTBox2_histo_desc, 
+			50, -500, 500)
+		self.hman.fetch(
+			self.Time2MinusTBox2_histo_name).GetXaxis().SetTitle(
+			"T0 minus tvertex box2 (ps)")
+
 		XYZBox2_histo_desc = "XYZBox2"
 		self.XYZBox2_histo_name = self.alabel(XYZBox2_histo_desc)
 		self.hman.h3(self.XYZBox2_histo_name, XYZBox2_histo_desc, 
@@ -846,45 +883,15 @@ class CRT(AAlgo):
 			self.ZBox2_histo_name).GetXaxis().SetTitle(
 			"Z interaction box 2 (mm)")
 
-		T0Box1_histo_desc = "T0Box1"
-		self.T0Box1_histo_name = self.alabel(T0Box1_histo_desc)
-		self.hman.h1(self.T0Box1_histo_name, T0Box1_histo_desc, 
-			50, 300, 800)
-		self.hman.fetch(
-			self.T0Box1_histo_name).GetXaxis().SetTitle(
-			"t hit box1 (ps)")
+		T0Box2_histo_desc = "T0Box2"
+		self.T0Box2_histo_name = self.alabel(T0Box2_histo_desc)
+		self.hman.h1(self.T0Box2_histo_name, T0Box2_histo_desc, 
+			50,300, 800)
 
-		TBox1_histo_desc = "TBox1"
-		self.TBox1_histo_name = self.alabel(TBox1_histo_desc)
-		self.hman.h1(self.TBox1_histo_name, TBox1_histo_desc, 
-			50, 0, 500)
 		self.hman.fetch(
-			self.TBox1_histo_name).GetXaxis().SetTitle(
-			"time T0 hit to vertex box 1 (ps)")
+			self.T0Box2_histo_name).GetXaxis().SetTitle(
+			"t0 box2 (ps)")
 
-		DT1_histo_desc = "DT1"
-		self.DT1_histo_name = self.alabel(DT1_histo_desc)
-		self.hman.h1(self.DT1_histo_name, DT1_histo_desc, 
-			50, -500, 500)
-		self.hman.fetch(
-			self.DT1_histo_name).GetXaxis().SetTitle(
-			"(d(0,v1) - d(0,v2))/c (ps)")
-
-		DT2_histo_desc = "DT2"
-		self.DT2_histo_name = self.alabel(DT2_histo_desc)
-		self.hman.h1(self.DT2_histo_name, DT2_histo_desc, 
-			50, -500, 500)
-		self.hman.fetch(
-			self.DT2_histo_name).GetXaxis().SetTitle(
-			"(d(v1-h1) - d(v2 -h2))*(n/c) (ps)")
-
-		DTHit12_histo_desc = "DTHit12"
-		self.DTHit12_histo_name = self.alabel(DTHit12_histo_desc)
-		self.hman.h1(self.DTHit12_histo_name, DTHit12_histo_desc, 
-			50, -500, 500)
-		self.hman.fetch(
-			self.DTHit12_histo_name).GetXaxis().SetTitle(
-			"( thit1 - thit2 (ps)")
 
 		DT_histo_desc = "DT"
 		self.DT_histo_name = self.alabel(DT_histo_desc)
@@ -894,13 +901,13 @@ class CRT(AAlgo):
 			self.DT_histo_name).GetXaxis().SetTitle(
 			"DT (ps)")
 
-		# for i in xrange(self.NPE):
-		# 	DT_histo_desc = "DT"+str(i+1)
-		# 	lbl ="DT computed with %s PES (ps)"%(i+1)
-		# 	DT_histo_name = self.alabel(DT_histo_desc)
-		# 	self.hman.h1(DT_histo_name, DT_histo_desc, 
-		# 	50, -200, 200)
-		# 	self.hman.fetch(DT_histo_name).GetXaxis().SetTitle(lbl)
+		for i in xrange(self.NPE):
+			DT_histo_desc = "DT"+str(i+1)
+			lbl ="DT computed with %s PES (ps)"%(i+1)
+			DT_histo_name = self.alabel(DT_histo_desc)
+			self.hman.h1(DT_histo_name, DT_histo_desc, 
+			50, -200, 200)
+			self.hman.fetch(DT_histo_name).GetXaxis().SetTitle(lbl)
 
 
 

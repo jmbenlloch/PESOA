@@ -59,6 +59,10 @@ class LXe:
     self.LXRI = sorted(lxri, key=sortRI)
     #print self.LXRI
 
+    l,n = self.AverageLamdaAndRI()
+    self.AverageLamda = l
+    self.AverageRefractionIndexUV = n
+
   def AverageLamdaAndRI(self):
     """
     Returns the average lamda and refraction index
@@ -119,8 +123,7 @@ class LXe:
     return self.x0
   
   def RefractionIndexUV(self):
-    l,n = self.AverageLamdaAndRI()
-    return n
+    return self.AverageRefractionIndexUV
 
   def RefractionIndexBlue(self):
     return self.nBlue

@@ -39,22 +39,31 @@ Define the box with the following convention:
 
 
 """
+BOXF1 =[
+ [-12.8,-12.8,-100.],[-12.8,12.8,-100.],[12.8,-12.8,-100.],[12.8,12.8,-100.],
+ [-12.8,-12.8,-150.],[-12.8,12.8,-150.],[12.8,-12.8,-150.],[12.8,12.8,-150.]
+ ]
 
+BOXF2 =[
+ [-12.8,-12.8,100.],[-12.8,12.8,100.],[12.8,-12.8,100.],[12.8,12.8,100.],
+ [-12.8,-12.8,150.],[-12.8,12.8,150.],[12.8,-12.8,150.],[12.8,12.8,150.]
+ ]
 BOX1 =[
-[-12.8,-12.8,-100.],[-12.8,12.8,-100.],[12.8,-12.8,-100.],[12.8,12.8,-100.],
-[-12.8,-12.8,-150.],[-12.8,12.8,-150.],[12.8,-12.8,-150.],[12.8,12.8,-150.]
+[-128,-128,-100.],[-128,128,-100.],[128,-128,-100.],[128,128,-100.],
+[-128,-128,-150.],[-128,128,-150.],[128,-128,-150.],[128,128,-150.]
 ]
 
 BOX2 =[
-[-12.8,-12.8,100.],[-12.8,12.8,100.],[12.8,-12.8,100.],[12.8,12.8,100.],
-[-12.8,-12.8,150.],[-12.8,12.8,150.],[12.8,-12.8,150.],[12.8,12.8,150.]
+[-128,-128,100.],[-128,128,100.],[128,-128,100.],[128,128,100.],
+[-128,-128,150.],[-128,128,150.],[128,-128,150.],[128,128,150.]
 ]
+
 EPHOT = 511*keV
-STEP = 1*mm
-NR = 1.55 #(refraction index for 172 nm)
+STEP = 0.1*mm
+PHIMAX = pi/4.
 
 class PhotonGenerator:
-	def __init__(self,box1,box2,level):
+	def __init__(self,box1,box2,boxf1,boxf2,level=0, debug=0):
 		"""
 		box1, box2: instances of boxes
 		level = debug level
@@ -63,30 +72,55 @@ class PhotonGenerator:
 		self.m = Messenger(level)
 		self.box1 = box1
 		self.box2 = box2 
+		self.fbox1 = boxf1
+		self.fbox2 = boxf2 
 		self.xmin = self.box1.xmin #assume that box1 defines fiducial
 		self.xmax = self.box1.xmax #assume that box1 defines fiducial
 		self.dx = self.box1.x/2.
 		self.ymin = self.box1.ymin #assume that box1 defines fiducial
 		self.ymax = self.box1.ymax #assume that box1 defines fiducial
 		self.dy = self.box1.y/2.
-		self.dz = abs(self.box1.zmin) 
-		
-		self.m.log(2, "Box1 --", self.box1)
-		self.m.log(2, "Box2 ---", self.box2)
+		self.dz = abs(self.box1.zmin)
+
+		self.debug = debug
+
+		# distance in z from the interaction point to box1 or box2
+		z = self.box2.zmin #assumes that boxes are at the same distance from IP
+		x = self.fbox2.x/2.
+		y = self.fbox2.y/2.
+		r = sqrt(x**2+y**2+z**2)
+
+		phimax = acos(z/r)
+		self.phimax = min(phimax, PHIMAX)
+		self.thmax = atan(y/x)
+
+		self.m.log(1, "Box1 --", self.box1)
+		self.m.log(1, "Box2 ---", self.box2)
+
+		self.m.log(1, "FBox1 --", self.fbox1)
+		self.m.log(1, "FBox2 ---", self.fbox2)
+
+		self.m.log(1, "x = %7.2f y = %7.2f z = %7.2f phimax = %7.2f thmax = %7.2f"%(
+			x,y,z,self.phimax,self.thmax))
 
 		self.lxe = LXe() #lxe properties
-		self.m.log(2, "LXe ---", self.lxe)
+		self.m.log(1, "LXe ---", self.lxe)
 
 		xPE = self.lxe.PhotoelectricCrossSection(EPHOT)
 		xTot = self.lxe.TotalCrossSection(EPHOT)
-		ProbPE = xPE/xTot
+		self.ProbPE = xPE/xTot
 
-		self.ProbStep = self.lxe.Efficiency(EPHOT,STEP)*ProbPE
+		self.ProbStep = self.lxe.Efficiency(EPHOT,STEP)*self.ProbPE
 
-		self.m.log(2, "Photoelectric probability for 511 keV = %7.2f"%(
-			ProbPE))
-		self.m.log(2, "Probability PE per mm at 511 keV = %7.2g"%(
+		self.m.log(1, "Photoelectric probability for 511 keV = %7.2f"%(
+			self.ProbPE))
+		self.m.log(1, "Probability interaction per mm at 511 keV = %7.2g"%(
 			self.ProbStep))
+		self.m.log(1, "Probability PE per mm at 511 keV = %7.2g"%(
+			self.ProbStep*self.ProbPE))
+
+		if self.debug > 0:
+			wait()
 
 	def GenerateEvent(self):
 		"""
@@ -120,14 +154,14 @@ class PhotonGenerator:
 		#safety check
 
 		if self.box1.Active((x1,y1,z1)) == False:
-			self.m.log(0, '**generated point in box 1 out of box 1*** ')
-			self.m.log(0, ' x1 =%7.2f mm, y1 =%7.2f mm, z1 =%7.2f mm '%(
+			self.m.log(1, '**generated point in box 1 out of box 1*** ')
+			self.m.log(1, ' x1 =%7.2f mm, y1 =%7.2f mm, z1 =%7.2f mm '%(
 					x1/mm,y1/mm,z1/mm))
 			return False
 
 		if self.box2.Active((x2,y2,z2)) == False:
-			self.m.log(0, '**generated point in box 2 out of box 2*** ')
-			self.m.log(0, ' x2 =%7.2f mm, y2 =%7.2f mm, z2 =%7.2f mm '%(
+			self.m.log(1, '**generated point in box 2 out of box 2*** ')
+			self.m.log(1, ' x2 =%7.2f mm, y2 =%7.2f mm, z2 =%7.2f mm '%(
 					x2/mm,y2/mm,z2/mm))
 			return False
 
@@ -148,47 +182,61 @@ class PhotonGenerator:
 				
 
 		self.m.log(3,'Prob of int for g1 (511 keV), path =%7.2f mm) = %7.2f'%(
-				path1/mm,self.lxe.Efficiency(EPHOT,path1)))
+				path1/mm,self.lxe.Efficiency(EPHOT,path1)*self.ProbPE))
 
-		self.m.log(3,'Prob of int for g1 (511 keV), path =%7.2f mm) = %7.2f'%(
-				path2/mm,self.lxe.Efficiency(EPHOT,path2)))
+		self.m.log(3,'Prob of int for g2 (511 keV), path =%7.2f mm) = %7.2f'%(
+				path2/mm,self.lxe.Efficiency(EPHOT,path2)*self.ProbPE))
 
-		#propagate photon 1:
-		inter =0
-		istep =0
-		for step in drange(0, path1, STEP):
-			self.m.log(4,'step =%7.2f mm '%(step/mm))
-			#interacts?
-			if rnd.uniform(0.,1.) <= self.ProbStep:
-				inter =1
-				istep = step
-				break
-
-
-		if inter == 0:
-			return False  #fail in box1 no need to try in box2
-
-
-		self.m.log(3,' Photon 1 interacts in step =%7.2f  '%(step))
-		step1 = step
-
-		#propagate photon 2:
-		inter =0
-		istep =0
 		
-		for step in drange(0, path2, STEP):
-			self.m.log(4,'step =%7.2f mm '%(step/mm))
-			#interacts?
-			if rnd.uniform(0.,1.) <= self.ProbStep:
-				inter =1
-				istep = step
-				break
+		#loop until photons interact
 
-		if inter == 0:
-			return False  #fail in box2 no need to carry on
+		step1=0
+		step2=0
+		ntr=0
+		while True: 
+			ntr+=1
+			#propagate photon 1:
+			inter =0
+			istep =0
+			for step in drange(0, path1, STEP):
+				self.m.log(5,'step =%7.2f mm, prob step =%7.2g '%(
+					step/mm,self.ProbStep))
+				#interacts?
+				if rnd.uniform(0.,1.) <= self.ProbStep:
+					inter =1
+					istep = step
+					break
 
-		self.m.log(3,' Photon 2 interacts in step =%7.2f  '%(step))
-		step2 = step
+			if inter == 0:
+				self.m.log(4,' Photon 1 did not interact, start over ')
+				continue  #fail in box1 no need to try in box2
+
+
+			self.m.log(4,' Photon 1 interacts in step =%7.2f '%(step))
+			step1 = step
+
+			#propagate photon 2:
+			inter =0
+			istep =0
+		
+			for step in drange(0, path2, STEP):
+				self.m.log(5,'step =%7.2f mm '%(step/mm))
+				#interacts?
+				if rnd.uniform(0.,1.) <= self.ProbStep:
+					inter =1
+					istep = step
+					break
+
+			if inter == 0:
+				self.m.log(4,' Photon 2 did not interact, start over ')
+				continue  
+
+			self.m.log(4,' Photon 2 interacts in step =%7.2f  '%(step))
+			step2 = step
+			break
+
+		self.m.log(2,' *Interaction* step1 = %7.2f step2 =%7.2f tried =%d time'%(
+			step1,step2,ntr))
 
 		#finally, find the interaction point in each box.
 		xi1,yi1,zi1 = propagateInBox((x1,y1,z1), 
@@ -216,6 +264,9 @@ class PhotonGenerator:
 
 		self.X1 = [xi1,yi1,zi1,t1]
 		self.X2 = [xi2,yi2,zi2,t2]
+
+		if self.debug > 0:
+			wait()
 		return True
 		
 
@@ -231,21 +282,47 @@ class PhotonGenerator:
 		where E = 511 keV and (+-) denotes a random sign
 		"""
 
-		
-		px = self.generatePt(EPHOT,self.dx,self.dz)
-		py = self.generatePt(EPHOT,self.dy,self.dz)
-		pz = sqrt(EPHOT**2 - px**2 - py**2)
+		# theta = rnd.uniform(0.,2*pi)
+		# phi = rnd.uniform(0.,pi)
+		theta = rnd.uniform(0.,self.thmax)
 
-		self.m.log(lvl, " px = %7.2f py = %7.2f pz = %7.2f "%(
+		phi = rnd.uniform(0.,self.phimax)
+		px = EPHOT*cos(theta)*sin(phi)
+
+		if rnd.uniform(0.,1.) > 0.5: 
+			px = -px
+
+		py = EPHOT*sin(theta)*sin(phi)
+
+		if rnd.uniform(0.,1.) > 0.5: 
+			py = -py
+
+		pz = EPHOT*cos(phi)
+
+		self.m.log(lvl, " ++Generate Momentum++ theta= %7.2g phi = %7.2g"%(
+			theta,phi))
+
+		#px = self.generatePt(EPHOT,self.dx,self.dz)
+		#py = self.generatePt(EPHOT,self.dy,self.dz)
+		self.m.log(lvl, " in kev: px = %7.2g py = %7.2g pz = %7.2g phot = %7.2g "%(
+			px,py,pz,EPHOT))
+
+		#pz = sqrt(EPHOT**2 - px**2 - py**2)
+
+		self.m.log(lvl, " normalized: px = %7.2g py = %7.2g pz = %7.2g "%(
 			px/EPHOT,py/EPHOT,pz/EPHOT))
 
-		P = NPVector([px/EPHOT,py/EPHOT,pz/EPHOT]) 
+		P = NPVector([px/EPHOT,py/EPHOT,pz/EPHOT])
+
+		if self.debug > 0:
+			wait() 
 		return P
 
 	def generatePt(self,p,x,z):
-		xf = x - 1*mm
-		ctx = rnd.uniform(0.,xf/z)
-		px = p*atan(ctx)
+		xf = x 
+		tanx = rnd.uniform(0.,xf/z)
+		tx = atan(tanx)
+		px = p*sin(tx)
 		if rnd.uniform(0.,1.) > 0.5: 
 			px = -px
 		
@@ -345,8 +422,10 @@ def Histograms(hman,box1,box2):
 
 if __name__ == '__main__':
 
-	nevents = 100000
-	nprint = 1000
+	nevents = 10000
+	nprint = 100
+	Debug = 0
+	lvl = 1
 	m = Messenger(0)
 
 	hman =HistoManager() 
@@ -354,6 +433,8 @@ if __name__ == '__main__':
 
 	box1 = Box(BOX1)
 	box2 = Box(BOX2)
+	boxf1 = Box(BOXF1)
+	boxf2 = Box(BOXF2)
 	Histograms(hman,box1,box2)
 
 	px1 = array.array('f',[0.])
@@ -377,7 +458,7 @@ if __name__ == '__main__':
 	tman.addBranch('tpg','pt2',pt2,dim=1)
 	
 		
-	pg = PhotonGenerator(box1,box2,0)
+	pg = PhotonGenerator(box1,box2,boxf1,boxf2,level=lvl, debug=Debug)
 	print pg
 
 	nfail = 0
@@ -434,10 +515,10 @@ if __name__ == '__main__':
 
 	m.log(0,"nevents =%d, nfail = %d nOK =%d"%(nevents,nfail,nOK))
 	pathFile = '/Users/jjgomezcadenas/Development/PETALO/WORK/histo/'
-	fileName = 'GeneratePhotons.root'
+	fileName = 'Photons_128_128_50.root'
 	hfile = pathFile+fileName
 	pathFile = '/Users/jjgomezcadenas/Development/PETALO/WORK/tree/'
-	fileName = 'GeneratePhotonsTree.root'
+	fileName = 'Photons_128_128_50.root'
 	tfile = pathFile+fileName
 	
 	hman.save(file_name=hfile)
