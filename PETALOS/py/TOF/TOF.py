@@ -94,7 +94,7 @@ class SiPMHit(object):
 
 ###########################################################
 class TimeMap(object):
-	def __init__(self, numberOfBoxes=2):
+	def __init__(self, numberOfBoxes=2, dtmax=1e+6):
 		"""
 		Class TimeMap organises the information in the boxes for TOF calculations
 
@@ -105,24 +105,26 @@ class TimeMap(object):
 		sipmMapList: a list of sipmMaps (one entry per box)
 		each sipmMap is a time-ordered list [sipmID, sipmHit], where sipmID is the id
 		of the SiPM and sipmHit is an instance of a class SiPMHit representing a hit
-		in the SiPM. 
+		in the SiPM.
+
+		sipmMapDTList: same as sipmMapList, but only sipmHits with time within dtmax of 
+		the first PE are included. 
+
+		sipmMapTimeList: a list of sipmTimeMaps (one entry per box) 
+		each sipmTime Map is a time-ordered list [time, sipmHit], where time is the time
+		a PES and sipmHit is an instance of a class SiPMHit representing a hit
+		in the SiPM. The list if built from the sipmMapDTList and contains an entry per each 
+		PES whose time stamp is within dtmax of first pes.  
+
+
 		"""
 		self.numberOfBoxes = numberOfBoxes
-		self.siPmMapList =0
+		self.dtmax = dtmax
 		self.vertexList =0
-
-	def SetSiPmMaps(self,siPmMapList):
-		"""
-		Sets the SiPM map lists (The list contains one SiPmMap per box)
-		Each SiPmMap is a list [sipmId, sipmInstance]  
-		"""
-		if (len(siPmMapList) != self.numberOfBoxes):
-			print " error! length of SiPM map list =%d != number of boxes = %d"%(
-				len(siPmMapList),self.numberOfBoxes)
-			sys.exit()
-
-		self.siPmMapList = siPmMapList
-
+		self.siPmMapList =0
+		self.siPmMapDTList =0
+		self.siPmMapTimeList = 0
+	
 	def SetInteractionVertices(self,vertexList):
 		"""
 		Sets the vertex lists (The list contains one vertex per box)
@@ -133,7 +135,36 @@ class TimeMap(object):
 				len(vertexList),self.numberOfBoxes)
 			sys.exit()
 		self.vertexList =vertexList
-    	
+
+	def SetSiPmMaps(self,siPmMapList):
+		"""
+		Sets:
+		self.siPmMapList --> one list per box. Each list is a time map. 
+		a time map is a list [simpID, sipmObject], order by the time of this first PE
+		of the sipmObject. 
+
+		self.siPmMapDTList ---> one list per box, same structure, but the list only contains
+		those sipm in an interval of dt wrt the first SiPM. 
+
+		self.siPmMapTimeList  ---> one list per box. Each list is of the from
+		[time, sipmObject] and has as many entries as pes in the box 
+		"""
+		if (len(siPmMapList) != self.numberOfBoxes):
+			print " error! length of SiPM map list =%d != number of boxes = %d"%(
+				len(siPmMapList),self.numberOfBoxes)
+			sys.exit()
+
+		self.siPmMapList = siPmMapList
+		self.siPmMapDTList =self.setDTMaps(self.dtmax)
+		self.siPmMapTimeList =self.setSiPmTimeMaps()
+
+	
+	def DTMAX(self):
+		"""
+		Return the DTMAX wrt first pes
+		"""
+		return self.dtmax
+
 	def NumberOfBoxes(self):
 		"""
 		Return the number of boxes in the setup
@@ -152,9 +183,22 @@ class TimeMap(object):
  		"""
 		return self.siPmMapList[box-1]
 
+	def SiPmMapDT(self, box=1):
+		"""
+		returns the SiPMDT map in the box
+ 		"""
+		return self.siPmMapDTList[box-1]
+
+	def SiPmTimeMap(self,box=1):
+		"""
+		returns the SiPM time map in box   
+		"""
+		return self.siPmMapTimeList[box-1]
+
+
 	def SiPmHitId(self,box=1,index=0):
 		"""
-		Returns the SiPM hit with index in box
+		Returns the SiPM hit id with index in box
 		index runs from 0 to the number of SiPM in the box. Since the maps
 		are ordered, '0' is the earliest time.  
 		"""
@@ -170,6 +214,9 @@ class TimeMap(object):
 	
 	def NumberOfSiPmHits(self,box=1):
 		return len(self.siPmMapList[box-1])
+
+	def NumberOfSiPmHitsDT(self,box=1):
+		return len(self.siPmMapDTList[box-1])
 		
 		# if jitter > 0:
 
@@ -178,14 +225,93 @@ class TimeMap(object):
 		#print "boxNumber =%d"%(boxNumber)
 		#print "x,y,z,A,time",x,y,z,A,time
 
+	def setDTMaps(self,dt):
+		"""
+		Creates a DT map list, considering only those SiPMs with a time stamp
+		within dt of first SiPM hit.
+		"""
+
+		siPmMapDTList =[]
+		for ibox in xrange(1,3):
+			tSipmHit = self.SiPmHit(box=ibox,index=0).TimeFirstPE() 
+			sipmMap = self.SiPmMap(box=ibox)
+		
+			hitMap =[]
+			for elem in sipmMap:
+				sipmid = elem[0]
+				sipmhit = elem[1]
+				if abs (sipmhit.TimeFirstPE() - tSipmHit) < dt:
+					hitMaplist=[sipmid,sipmhit]
+					hitMap.append(hitMaplist) 
+
+			siPmMapDTList.append(hitMap)
+
+		return siPmMapDTList
+
+
+	def setSiPmTimeMaps(self):
+		"""
+		self.siPmMapTimeList  ---> one list per box. Each list is of the from
+		[time, sipmObject] and has as many entries as pes in the box  
+		"""
+		siPmMapTimeList =[]
+
+		for ibox in xrange(1,3): 
+			sipmMap = self.SiPmMapDT(box=ibox)
+			hitMap =[]
+			for elem in sipmMap:
+				sipmid = elem[0]
+				sipmhit = elem[1]
+				for tpes in sipmhit.W:
+					hitMaplist=[tpes,sipmhit]
+					hitMap.append(hitMaplist)
+				
+			siPmMapTimeList.append(hitMap)
+		return siPmMapTimeList
+
+	def displaySipPmMap(self,siPmMap):
+		"""
+		Display a siPmMap: ---> a time-ordered list [sipmID, sipmHit] 
+		"""
+		
+		s='['
+		for elem in siPmMap:
+			hid = elem[0]
+			sipm = elem[1]
+			s+='(id=%d,time=%7.2f) '%(hid,sipm.TimeFirstPE())
+		s+=']'
+		
+		return s
+
+	def displaySiPmTimeMap(self,timeMap):
+		"""
+		Display a SipmTimeMap --> a time-ordered list [time, sipmHit]
+		"""
+		
+		s='['
+		for elem in timeMap:
+			time = elem[0]
+			sipm = elem[1]
+			s+='(time=%7.2f,id=%d ) '%(time,sipm.ID())
+		s+=']'
+		"""
+		returns the SiPM time map in box   
+		"""
+		return s
 
 	def __str__(self):
 		
-		s=' Time Map: Number of boxes =%d '%(self.NumberOfBoxes())
+		s=' Time Map: Number of boxes =%d, dtmax =%7.2f '%(
+			self.NumberOfBoxes(), self.dtmax)
 		for nb in xrange(0,self.NumberOfBoxes()):
-			s+=' box %d '%(nb)
-			s+=' length of SiPmMap = %d'%(len(self.SiPmMap(nb)))
-			for indx in xrange(0,len(self.SiPmMap(nb))):
-				s+='[%s]'%(self.SiPmHit(box=nb,index=indx))
+			s+='\n-->box %d'%(nb+1)
+			s+='\nlength of SiPmMap = %d, '%(len(self.SiPmMap(nb)))
+			s+='length of SiPmMapDT = %d, '%(len(self.SiPmMapDT(nb)))
+			s+='length of SiPmTimeMap = %d'%(len(self.SiPmTimeMap(nb)))
+			s+='\n+++SiPmMap (DT)  \n '
+			s+=self.displaySipPmMap(self.SiPmMapDT(box=nb))
+			s+='\n ---SiPmTimeMap (DT)\n '
+			s+=self.displaySiPmTimeMap(self.SiPmTimeMap(box=nb))
+		
 		return s
 	
