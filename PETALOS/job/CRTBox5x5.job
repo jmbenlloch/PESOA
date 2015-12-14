@@ -28,7 +28,7 @@ CNTJob LEVEL I 1
 
 #--------- DATA -------#
 CNTJob INPUT_DATA SV 1
-/Users/jjgomezcadenas/Development/PETALO/DATA/tof_electrons_refl97_VUV3mm_z5cm.0.pet
+/Users/jjgomezcadenas/Development/PETALO/DATA/tof_electrons_refl97_VUV6mm_xy5cm_z5cm.0.pet
 
 #--------- DATA READER -------#
 CNTJob READER S gateReader
@@ -38,15 +38,15 @@ CNTJob WRITER S gateWriter
 
 #------------- log file -------------#
 CNTJob LOG I 0
-CNTJob FLOG S /Users/jjgomezcadenas/Development/PETALO/WORK/log/ tof_electrons_refl97_VUV3mm_z5cm_QE_0.25_SPTR_00_ASIC_00_DT50.log
+CNTJob FLOG S /Users/jjgomezcadenas/Development/PETALO/WORK/log/ tof_electrons_refl97_VUV6mm_xy5cm_z5cm_QE_0.25_SPTR_00_ASIC_00_DT50.log
 
 #---------- histogram file ----------#
 CNTJob HISTOS 1
-CNTJob FHISTOS S /Users/jjgomezcadenas/Development/PETALO/WORK/histo/tof_electrons_refl97_VUV3mm_z5cm_QE_0.25_SPTR_00_ASIC_00_DT50_histos.root
+CNTJob FHISTOS S /Users/jjgomezcadenas/Development/PETALO/WORK/histo/tof_electrons_refl97_VUV6mm_xy5cm_z5cm_QE_0.25_SPTR_00_ASIC_00_DT50_histos.root
 
 #---------- histogram file ----------#
 CNTJob TREES 1
-CNTJob FTREES S /Users/jjgomezcadenas/Development/PETALO/WORK/tree/tof_electrons_refl97_VUV3mm_z5cm_QE_0.25_SPTR_00_ASIC_00_DT50_trees.root
+CNTJob FTREES S /Users/jjgomezcadenas/Development/PETALO/WORK/tree/tof_electrons_refl97_VUV6mm_xy5cm_z5cm_QE_0.25_SPTR_00_ASIC_00_DT50_trees.root
 
 #------ SAVE EVENTS IN OUTPUT FILE ----------# 
 CNTJob SAVE I 0
@@ -64,7 +64,6 @@ CNTJob NDEBUG I 100
 #--------- ALGORITHMS -------#
 CNTJob ALGOS SV 1
 CRT
-
 
 #--------- Algo PARAMS -------#
 CRT VLEVEL I 1
@@ -89,130 +88,130 @@ CRT Box2Id IV 4
 12063
 
 CRT Box1V1 DV 3 
--12.8 
--12.8 
+-25.0 
+-25.0 
 -100.
 CRT Box1V2 DV 3 
--12.8 
-12.8 
+-25.0 
+25.0 
 -100.
 CRT Box1V3 DV 3 
-12.8 
--12.8 
+25.0 
+-25.0 
 -100
 CRT Box1V4 DV 3 
-12.8 
-12.8 
+25.0 
+25.0 
 -100
 CRT Box1V5 DV 3 
--12.8 
--12.8 
+-25.0 
+-25.0 
 -150
 CRT Box1V6 DV 3 
--12.8 
-12.8 
+-25.0 
+25.0 
 -150
 CRT Box1V7 DV 3 
-12.8 
--12.8 
+25.0 
+-25.0 
 -150
 CRT Box1V8 DV 3 
-12.8 
-12.8 
+25.0 
+25.0 
 -150
 CRT Box2V1 DV 3 
--12.8 
--12.8 
+-25.0 
+-25.0 
 100
 CRT Box2V2 DV 3 
--12.8 
-12.8 
+-25.0 
+25.0 
 100
 CRT Box2V3 DV 3 
-12.8 
--12.8 
+25.0 
+-25.0 
 100
 CRT Box2V4 DV 3 
-12.8 
-12.8 
+25.0 
+25.0 
 100
 CRT Box2V5 DV 3 
--12.8 
--12.8 
+-25.0 
+-25.0 
 150.
 CRT Box2V6 DV 3 
--12.8
-12.8 
+-25.0
+25.0 
 150. 
 CRT Box2V7 DV 3 
-12.8 
--12.8 
+25.0 
+-25.0 
 150.
 CRT Box2V8 DV 3 
-12.8 
-12.8 
+25.0 
+25.0 
 150.
 CRT FBox1V1 DV 3 
--12.0 
--12.0 
+-12.5 
+-12.5 
 -101.
 CRT FBox1V2 DV 3 
--12.0 
-12.0
+-12.5 
+12.5
 -101.
 CRT FBox1V3 DV 3 
-12.0 
--12.0 
+12.5 
+-12.5 
 -101.
 CRT FBox1V4 DV 3 
-12.0
-12.0 
+12.5
+12.5 
 -101.
 CRT FBox1V5 DV 3 
--12.0 
--12.0 
+-12.5 
+-12.5 
 -149.
 CRT FBox1V6 DV 3 
--12.0 
-12.0 
+-12.5 
+12.5
 -149.
 CRT FBox1V7 DV 3 
-12.0
--12.0 
+12.5
+-12.5 
 -149.
 CRT FBox1V8 DV 3 
-12.0
-12.0 
+12.5
+12.5 
 -149.
 CRT FBox2V1 DV 3 
--12.0 
--12.0 
+-12.5 
+-12.5 
 101
 CRT FBox2V2 DV 3 
--12.0 
-12.0 
+-12.5 
+12.5 
 101.
 CRT FBox2V3 DV 3 
-12.0
--12.0 
+12.5
+-12.5 
 101.
 CRT FBox2V4 DV 3 
-12.0 
-12.0 
+12.5 
+12.5 
 101.
 CRT FBox2V5 DV 3 
--12.0 
--12.0 
+-12.5 
+-12.5 
 149.
 CRT FBox2V6 DV 3 
--12.0
-12.0
+-12.5
+12.5
 149. 
 CRT FBox2V7 DV 3 
-12.0 
--12.0 
+12.5 
+-12.5 
 149.
 CRT FBox2V8 DV 3 
-12.0
-12.0 
+12.5
+12.5 
 149.

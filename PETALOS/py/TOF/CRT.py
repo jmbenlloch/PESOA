@@ -146,33 +146,23 @@ class CRT(AAlgo):
 		if self.debug == 1:
 			wait()	
 		
-		#Compute DT using the first pe
+		#Compute DT 
 
-		dt1 = self.DTFirstPe()
-		self.hman.fill(self.DT_histo_name,dt1/ps)
+		dtFirstPe, dtAverageSiPm, dtAverageTime = self.ComputeDT()
+		
+		self.hman.fill(self.DT_histo_name,dtFirstPe/ps)
+		self.hman.fill(self.DTSiPmAvg_histo_name,dtAverageSiPm/ps)
+		self.hman.fill(self.DTTimeAvg_histo_name,dtAverageTime/ps)
 
-		#Compute DT using the average of the first pe in the SiPM map
-		#(within DT)
-		dta1 = self.DTAverageSiPmDT()
-
-		self.m.log(2,"dt (first PE) =%7.2f ps, "%(dt1/ps))
-		self.m.log(2,"dta1 (Average SiPM)=%7.2f ps, "%(dta1/ps))
-		self.hman.fill(self.DTSiPmAvg_histo_name,dta1/ps)
-
-		#Compute DT using up to NPE pe
-
-		# DT = self.dtNPE(dt1)
-
-		# self.m.log(2,"DT for the first %d pe"%(self.NPE))
-
-		# for i in xrange(len(DT)-1):
-		# 	DT_histo_desc = "DT"+str(i+1)
-		# 	DT_histo_name = self.alabel(DT_histo_desc)
-		# 	d = DT[i]
-
-		# 	self.m.log(2,"dt =%7.2f ps, "%(d/ps))
-		# 	self.hman.fill(DT_histo_name,d/ps)
-
+		self.FirstPeDT[0]=dtFirstPe/ps
+		self.AverageSiPmDT[0]=dtAverageSiPm/ps
+		self.AverageTimeDT[0]=dtAverageTime/ps
+		self.m.log(2,
+			"-->dtFirstPe =%7.2f  ps,  "%(dtFirstPe/ps))
+		self.m.log(2,
+			"-->dtAverageSiPm =%7.2f  ps,  "%(dtAverageSiPm/ps))
+		self.m.log(2,
+			"-->dtAverageTime =%7.2f  ps,  "%(dtAverageTime/ps))
 		
 		if self.debug == 1:
 			wait()	
@@ -412,8 +402,8 @@ class CRT(AAlgo):
 		TimeMapBox2 = sorted(timeMapBox2.items(), key=sortSiPmHits)
 
 		self.m.log(3, ' ng1 =%7.2f, ng2 =%7.2f '%(ng1,ng2))
-		self.m.log(3, " time map box1 = ",timeMapBox1)
-		self.m.log(3, " time map box2 = ",timeMapBox2)
+		self.m.log(5, " time map box1 = ",timeMapBox1)
+		self.m.log(5, " time map box2 = ",timeMapBox2)
 
 		self.timeMap.SetSiPmMaps((TimeMapBox1,TimeMapBox2))
 		
@@ -421,7 +411,53 @@ class CRT(AAlgo):
 		
 		if self.debug == 1:
 			wait()
+
+###########################################################
+	def ComputeDT(self):
+		"""
+		Compute DT using three methods:
+		1) FirstPE to arrive to SiPMs
+		2) Average of the first pes to arrive to any siPM
+		3) Average of the first wave of pes to arrive to any Sipm 
+		"""
+
+		self.m.log(3," ---ComputeDT---")
+
+		vertexBox1 =self.timeMap.InteractionVertex(box=1)
+		vertexBox2 =self.timeMap.InteractionVertex(box=2)
+
+		DT1 = self.ComputeDT1((0,0,0),vertexBox1.XYZ(),vertexBox2.XYZ())
+		self.m.log(3," DT1 =  %7.2f ps "%(DT1/ps))
+
+		self.DT1[0]=DT1/ps
+		self.hman.fill(self.DT1_histo_name,DT1/ps)
+
+		DT2,dtHit12 = self.DTFirstPe()
+
+		dtFirstPe  = self.DTOF(dtHit12,DT1,DT2)	
+		self.m.log(3,
+			"dtFirstPe =%7.2f  ps,  "%(dtFirstPe/ps))
+
+		DT2,dtHit12 = self.DTAverageSiPm()
+		dtAverageSiPm  = self.DTOF(dtHit12,DT1,DT2)	
+		self.m.log(3,
+			"dtAverageSiPm =%7.2f  ps,  "%(dtAverageSiPm/ps))
 		
+		DT2,dtHit12 = self.DTAverageTime()
+		dtAverageTime = self.DTOF(dtHit12,DT1,DT2)
+		self.m.log(3,
+			"dtAverageTime =%7.2f  ps,  "%(dtAverageTime/ps))
+
+		return dtFirstPe,dtAverageSiPm,dtAverageTime
+
+		
+###########################################################
+	def DTOF(self,dthit12,dt1,dt2):
+		"""
+		Compute difference of time of flight: DTOF
+		"""
+		return (dthit12 - dt1 - dt2)/2.
+
 ###########################################################
 	def DTFirstPe(self):
 		"""
@@ -438,9 +474,6 @@ class CRT(AAlgo):
 		self.m.log(3," DTFirstPe: Hit 1 =  %s"%(siPMHit1))
 		self.m.log(3," DTFirstPe: Hit 2 =  %s"%(siPMHit2))
 
-		DT1 = self.ComputeDT1((0,0,0),vertexBox1.XYZ(),vertexBox2.XYZ())
-		self.m.log(3," DT1 =  %7.2f ps "%(DT1/ps))
-
 		DT2 = self.ComputeDT2(siPMHit1.XYZ(),vertexBox1.XYZ(),
 								   siPMHit2.XYZ(),vertexBox2.XYZ())
 		self.m.log(3," DT2 =  %7.2f ps "%(DT2/ps))
@@ -448,42 +481,33 @@ class CRT(AAlgo):
 		dtHit12 = self.ComputeDTHit12(siPMHit1.TimeFirstPE(), siPMHit2.TimeFirstPE())  
 		self.m.log(3,"dtHit12 =%7.2f  ps,  "%(dtHit12/ps))
 
-		dt12 = 	(dtHit12 - DT1 - DT2)/2.
-		self.m.log(3,
-			"dt12 =%7.2f  ps,  "%(dt12/ps))
-
 			
 		self.tFstSiPMb1[0] = siPMHit1.TimeFirstPE()/ps
-		self.tFstSiPMb2[0] = siPMHit2.TimeFirstPE()/ps		
-		self.DT1[0]=DT1/ps
+		self.tFstSiPMb2[0] = siPMHit2.TimeFirstPE()/ps			
 		self.DT2[0]=DT2/ps
 		self.DTHit12[0]=dtHit12/ps
-		self.DT12[0]=dt12/ps		
-		self.hman.fill(self.T0Box1_histo_name,siPMHit1.TimeFirstPE()/ps)
-		self.hman.fill(self.DT1_histo_name,DT1/ps)
+
+		self.hman.fill(self.T0Box1_histo_name,siPMHit1.TimeFirstPE()/ps)		
 		self.hman.fill(self.DT2_histo_name,DT2/ps)
 		self.hman.fill(self.DTHit12_histo_name,dtHit12/ps)
 
-		return dt12
+		return DT2,dtHit12
 
 ###########################################################
-	def DTAverageSiPmDT(self):
+	def DTAverageSiPm(self):
 		"""
 		Compute DT using the first PE of all the SiPMs with a first PE
 		within DTMAX of the first PE. 
 		"""
 
-		self.m.log(3," ---DTAveragePe---") 
+		self.m.log(3," ---DTAverageSiPm---") 
 
 		sipmDTMap1 = self.timeMap.SiPmMapDT(box=1)
 		sipmDTMap2 = self.timeMap.SiPmMapDT(box=2)
 		vertexBox1 =self.timeMap.InteractionVertex(box=1)
 		vertexBox2 =self.timeMap.InteractionVertex(box=2)
-
+	
 		ll = min(len(sipmDTMap1),len(sipmDTMap2))
-
-		DT1 = self.ComputeDT1((0,0,0),vertexBox1.XYZ(),vertexBox2.XYZ())
-		self.m.log(3," DTSiPmAvg1 =  %7.2f ps "%(DT1/ps))
 
 		dt2 = 0
 		dth12 = 0
@@ -501,21 +525,58 @@ class CRT(AAlgo):
 		self.m.log(3," DTSiPmAvg2 =  %7.2f ps "%(DT2/ps)) 
 		self.m.log(3,"dtSiPmAvgHit12 =%7.2f  ps,  "%(dtHit12/ps))
 
-		dt12 = 	(dtHit12 - DT1 - DT2)/2.
-		self.m.log(3,
-			"dt12 =%7.2f  ps,  "%(dt12/ps))
-
-				
-		self.DTSiPmAvg1[0]=DT1/ps
 		self.DTSiPmAvg2[0]=DT2/ps
 		self.DTSiPmAvgHit12[0]=dtHit12/ps
-		self.DTSiPmAvg12[0]=dt12/ps	
-
-		self.hman.fill(self.DTSiPmAvg1_histo_name,DT1/ps)
+		
 		self.hman.fill(self.DTSiPmAvg2_histo_name,DT2/ps)
 		self.hman.fill(self.DTSiPmAvgHit12_histo_name,dtHit12/ps)
 
-		return dt12
+
+		return DT2,dtHit12
+
+
+###########################################################
+	def DTAverageTime(self):
+		"""
+		Compute DT using all the PEs in the event with time stamp 
+		less than DTMAX. 
+		"""
+
+		self.m.log(3," ---DTAverageTime---") 
+		
+		sipmTimeMap1 = self.timeMap.SiPmTimeMap(box=1)
+		sipmTimeMap2 = self.timeMap.SiPmTimeMap(box=2)
+		vertexBox1 =self.timeMap.InteractionVertex(box=1)
+		vertexBox2 =self.timeMap.InteractionVertex(box=2)
+		
+		ll = min(len(sipmTimeMap1),len(sipmTimeMap2))
+
+		dt2 = 0
+		dth12 = 0
+		for idx in xrange(0,ll):
+			sipmTime1 = sipmTimeMap1[idx][0]
+			siPMHit1 = sipmTimeMap1[idx][1]
+			sipmTime2 = sipmTimeMap2[idx][0]
+			siPMHit2 = sipmTimeMap2[idx][1]
+			
+			dt2+= self.ComputeDT2(siPMHit1.XYZ(),vertexBox1.XYZ(),
+								   siPMHit2.XYZ(),vertexBox2.XYZ())
+
+			dth12+=self.ComputeDTHit12(sipmTime1,sipmTime2)
+
+		DT2 = dt2/float(ll)
+		dtHit12 =dth12/float(ll)
+
+		self.m.log(3," DTTimeAvg2 =  %7.2f ps "%(DT2/ps)) 
+		self.m.log(3,"dtTimeAvgHit12 =%7.2f  ps,  "%(dtHit12/ps))
+
+		self.DTTimeAvg2[0]=DT2/ps
+		self.DTTimeAvgHit12[0]=dtHit12/ps
+		
+		self.hman.fill(self.DTTimeAvg2_histo_name,DT2/ps)
+		self.hman.fill(self.DTTimeAvgHit12_histo_name,dtHit12/ps)
+
+		return DT2,dtHit12
 
 ###########################################################
 	def ComputeDT1(self,v0,v1,v2):
@@ -566,34 +627,6 @@ class CRT(AAlgo):
 
 		dtHit12 = thitBox1 - thitBox2
 		return dtHit12
-
-# ###########################################################
-# 	def dtNPE(self, dt1):
-# 		"""
-# 		Computes the DT averaging the first NPE pes.
-# 		"""
-
-# 		self.m.log(3,
-# 			"dtNPE: d1 =%7.2f ps "%(dt1/ps))
-
-# 		dt = dt1
-# 		DT=[]
-# 		DT.append(dt)
-# 		for i in xrange(self.NPE):
-# 			dn = self.DNthPe(i+1)
-# 			dt += dn
-# 			self.m.log(3,
-# 			"dtNPE: d%s =%7.2f ps "%(i+1,dn/ps))
-# 			DT.append(dt)
-
-# 		DTA=[]
-# 		num = 1.
-# 		for d in DT:
-# 			d = d/num
-# 			DTA.append(d)
-# 			num+=1
-
-# 		return DTA
 
 
 	############################################################
@@ -684,28 +717,32 @@ class CRT(AAlgo):
 		self.dtPESb2  = array.array('f',[0.])
 		
 		self.DT1 = array.array('f',[0.]) # (d(0,v1) - d(0,v2))/c
+
 		self.DT2 = array.array('f',[0.]) #(d(v1,hit1) - d(v2,hit2))*(n/c)
 		self.DTHit12 = array.array('f',[0.]) # time (hit1 - hit2)
-		self.DT12 = array.array('f',[0.]) # DT (first pes)
-
-		self.DTSiPmAvg1 = array.array('f',[0.]) # as above for average of SiPMs
 		self.DTSiPmAvg2 = array.array('f',[0.]) 
 		self.DTSiPmAvgHit12 = array.array('f',[0.]) 
-		self.DTSiPmAvg12 = array.array('f',[0.]) 
-
-		self.dtFstSiPM = array.array('f',[0.]) # Dt computed with first SiPM
-
+		self.DTTimeAvg2 = array.array('f',[0.]) 
+		self.DTTimeAvgHit12 = array.array('f',[0.]) 
+		
+		self.FirstPeDT =array.array('f',[0.])
+		self.AverageSiPmDT =array.array('f',[0.])
+		self.AverageTimeDT =array.array('f',[0.])
+		
 		self.tman.book('CRT',"Coincidence Resoltion Time")
 		self.tman.addBranch('CRT','fid',self.fid,dim=1)
-		self.tman.addBranch('CRT','dtFstSiPM',self.dtFstSiPM,dim=1)
 		self.tman.addBranch('CRT','DT1',self.DT1,dim=1)
+
 		self.tman.addBranch('CRT','DT2',self.DT2,dim=1)
-		self.tman.addBranch('CRT','DTHit122',self.DTHit12,dim=1)
-		self.tman.addBranch('CRT','DT12',self.DT12,dim=1)
-		self.tman.addBranch('CRT','DTSiPmAvg1',self.DTSiPmAvg1,dim=1)
+		self.tman.addBranch('CRT','DTHit12',self.DTHit12,dim=1)
 		self.tman.addBranch('CRT','DTSiPmAvg2',self.DTSiPmAvg2,dim=1)
-		self.tman.addBranch('CRT','DTSiPmAvgHit122',self.DTSiPmAvgHit12,dim=1)
-		self.tman.addBranch('CRT','DTSiPmAvg12',self.DTSiPmAvg12,dim=1)
+		self.tman.addBranch('CRT','DTSiPmAvgHit12',self.DTSiPmAvgHit12,dim=1)
+		self.tman.addBranch('CRT','DTTimeAvg2',self.DTTimeAvg2,dim=1)
+		self.tman.addBranch('CRT','DTTimeAvgHit12',self.DTTimeAvgHit12,dim=1)
+
+		self.tman.addBranch('CRT','DTFirstPe',self.FirstPeDT,dim=1)
+		self.tman.addBranch('CRT','DTAverageSiPm',self.AverageSiPmDT,dim=1)
+		self.tman.addBranch('CRT','DTAverageTime',self.AverageTimeDT,dim=1)
 
 		self.tman.addBranch('CRT','xb1',self.xb1,dim=1)
 		self.tman.addBranch('CRT','yb1',self.yb1,dim=1)
@@ -875,14 +912,6 @@ class CRT(AAlgo):
 			self.DT1_histo_name).GetXaxis().SetTitle(
 			"(d(0,v1) - d(0,v2))/c (ps)")
 
-		DTSiPmAvg1_histo_desc = "DTSiPmAvg1"
-		self.DTSiPmAvg1_histo_name = self.alabel(DTSiPmAvg1_histo_desc)
-		self.hman.h1(self.DTSiPmAvg1_histo_name, DTSiPmAvg1_histo_desc, 
-			50, -500, 500)
-		self.hman.fetch(
-			self.DTSiPmAvg1_histo_name).GetXaxis().SetTitle(
-			"(d(0,v1) - d(0,v2))/c (ps)")
-
 		DT2_histo_desc = "DT2"
 		self.DT2_histo_name = self.alabel(DT2_histo_desc)
 		self.hman.h1(self.DT2_histo_name, DT2_histo_desc, 
@@ -897,6 +926,14 @@ class CRT(AAlgo):
 			50, -500, 500)
 		self.hman.fetch(
 			self.DTSiPmAvg2_histo_name).GetXaxis().SetTitle(
+			"(d(v1-h1) - d(v2 -h2))*(n/c) (ps)")
+
+		DTTimeAvg2_histo_desc = "DTTimeAvg2"
+		self.DTTimeAvg2_histo_name = self.alabel(DTTimeAvg2_histo_desc)
+		self.hman.h1(self.DTTimeAvg2_histo_name, DTTimeAvg2_histo_desc, 
+			50, -500, 500)
+		self.hman.fetch(
+			self.DTTimeAvg2_histo_name).GetXaxis().SetTitle(
 			"(d(v1-h1) - d(v2 -h2))*(n/c) (ps)")
 
 		DTHit12_histo_desc = "DTHit12"
@@ -915,13 +952,21 @@ class CRT(AAlgo):
 			self.DTSiPmAvgHit12_histo_name).GetXaxis().SetTitle(
 			"( thit1 - thit2 (ps)")
 
-		DT_histo_desc = "DT"
+		DTTimeAvgHit12_histo_desc = "DTTimeAvgHit12"
+		self.DTTimeAvgHit12_histo_name = self.alabel(DTTimeAvgHit12_histo_desc)
+		self.hman.h1(self.DTTimeAvgHit12_histo_name, DTTimeAvgHit12_histo_desc, 
+			50, -500, 500)
+		self.hman.fetch(
+			self.DTTimeAvgHit12_histo_name).GetXaxis().SetTitle(
+			"( thit1 - thit2 (ps)")
+
+		DT_histo_desc = "DTFirstPe"
 		self.DT_histo_name = self.alabel(DT_histo_desc)
 		self.hman.h1(self.DT_histo_name, DT_histo_desc, 
 			50, -200, 200)
 		self.hman.fetch(
 			self.DT_histo_name).GetXaxis().SetTitle(
-			"DT (ps)")
+			"DT First Pe (ps)")
 
 		DTSiPmAvg_histo_desc = "DTSiPmAvg"
 		self.DTSiPmAvg_histo_name = self.alabel(DTSiPmAvg_histo_desc)
@@ -931,18 +976,15 @@ class CRT(AAlgo):
 			self.DTSiPmAvg_histo_name).GetXaxis().SetTitle(
 			"DTSiPmAvg (ps)")
 
-		# for i in xrange(self.NPE):
-		# 	DT_histo_desc = "DT"+str(i+1)
-		# 	lbl ="DT computed with %s PES (ps)"%(i+1)
-		# 	DT_histo_name = self.alabel(DT_histo_desc)
-		# 	self.hman.h1(DT_histo_name, DT_histo_desc, 
-		# 	50, -200, 200)
-		# 	self.hman.fetch(DT_histo_name).GetXaxis().SetTitle(lbl)
+		DTTimeAvg_histo_desc = "DTTimeAvg"
+		self.DTTimeAvg_histo_name = self.alabel(DTTimeAvg_histo_desc)
+		self.hman.h1(self.DTTimeAvg_histo_name, DTTimeAvg_histo_desc, 
+			50, -200, 200)
+		self.hman.fetch(
+			self.DTTimeAvg_histo_name).GetXaxis().SetTitle(
+			"DTTimeAvg (ps)")
 
-
-
-
-	
+		
 
 	
 	

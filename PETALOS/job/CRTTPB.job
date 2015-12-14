@@ -28,7 +28,7 @@ CNTJob LEVEL I 1
 
 #--------- DATA -------#
 CNTJob INPUT_DATA SV 1
-/Users/jjgomezcadenas/Development/PETALO/DATA/tof_electrons_refl97_VUV3mm_z5cm.0.pet
+/Users/jjgomezcadenas/Development/PETALO/DATA/tof_electrons_refl97_TPB3mm_z5cm.pet
 
 #--------- DATA READER -------#
 CNTJob READER S gateReader
@@ -38,21 +38,21 @@ CNTJob WRITER S gateWriter
 
 #------------- log file -------------#
 CNTJob LOG I 0
-CNTJob FLOG S /Users/jjgomezcadenas/Development/PETALO/WORK/log/ tof_electrons_refl97_VUV3mm_z5cm_QE_0.25_SPTR_00_ASIC_00_DT50.log
+CNTJob FLOG S /Users/jjgomezcadenas/Development/PETALO/WORK/log/ tof_electrons_refl97_TPB3mm_z5cm_QE_0.25_SPTR_00_ASIC_00_DT50.log
 
 #---------- histogram file ----------#
 CNTJob HISTOS 1
-CNTJob FHISTOS S /Users/jjgomezcadenas/Development/PETALO/WORK/histo/tof_electrons_refl97_VUV3mm_z5cm_QE_0.25_SPTR_00_ASIC_00_DT50_histos.root
+CNTJob FHISTOS S /Users/jjgomezcadenas/Development/PETALO/WORK/histo/tof_electrons_refl97_TPB3mm_z5cm_QE_0.25_SPTR_00_ASIC_00_DT50_histos.root
 
 #---------- histogram file ----------#
 CNTJob TREES 1
-CNTJob FTREES S /Users/jjgomezcadenas/Development/PETALO/WORK/tree/tof_electrons_refl97_VUV3mm_z5cm_QE_0.25_SPTR_00_ASIC_00_DT50_trees.root
+CNTJob FTREES S /Users/jjgomezcadenas/Development/PETALO/WORK/tree/tof_electrons_refl97_TPB3mm_z5cm_QE_0.25_SPTR_00_ASIC_00_DT50_trees.root
 
 #------ SAVE EVENTS IN OUTPUT FILE ----------# 
 CNTJob SAVE I 0
 
 #---------- NUMBER OF EVENTS TO ANALYZE ----------#
-CNTJob NEVENTS I 1000
+CNTJob NEVENTS I 900
 
 #---------- FIRST EVENT TO ANALYZE ----------#
 CNTJob FEVENT I 0
