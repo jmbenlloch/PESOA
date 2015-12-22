@@ -19,7 +19,7 @@
 ###############################################
 
 #--------- PATHS with modules to be used -------#
-CNTJob PATHS SV 1
+CNTJob PATHS SV 3
 /Users/jjgomezcadenas/Development/PETALO/PESOA/PETALOS/py/TOF
 
 ############################ VERBOSITY LEVEL ##########################
@@ -28,7 +28,7 @@ CNTJob LEVEL I 1
 
 #--------- DATA -------#
 CNTJob INPUT_DATA SV 1
-/Users/jjgomezcadenas/Development/PETALO/DATA/tof_electrons_refl97_VUV3mm_z5cm.0.pet
+/Users/jjgomezcadenas/Development/PETALO/DATA/electrons_tof_refl97_VUV3mm_5cm_noScint.0.pet
 
 #--------- DATA READER -------#
 CNTJob READER S gateReader
@@ -38,15 +38,15 @@ CNTJob WRITER S gateWriter
 
 #------------- log file -------------#
 CNTJob LOG I 0
-CNTJob FLOG S /Users/jjgomezcadenas/Development/PETALO/WORK/log/ tof_electrons_refl97_VUV3mm_z5cm_QE_0.25_SPTR_00_ASIC_00_DT50.log
+CNTJob FLOG S /Users/jjgomezcadenas/Development/PETALO/WORK/log/test_refl97_VUV3mm_z5cm_QE_1.0_SPTR_0_ASIC_0_DT300_noCher.log
 
 #---------- histogram file ----------#
 CNTJob HISTOS 1
-CNTJob FHISTOS S /Users/jjgomezcadenas/Development/PETALO/WORK/histo/tof_electrons_refl97_VUV3mm_z5cm_QE_0.25_SPTR_00_ASIC_00_DT50_histos.root
+CNTJob FHISTOS S /Users/jjgomezcadenas/Development/PETALO/WORK/histo/test_refl97_VUV3mm_z5cm_QE_1.0_SPTR_0_ASIC_0_DT300_noScint_histos.root
 
 #---------- histogram file ----------#
 CNTJob TREES 1
-CNTJob FTREES S /Users/jjgomezcadenas/Development/PETALO/WORK/tree/tof_electrons_refl97_VUV3mm_z5cm_QE_0.25_SPTR_00_ASIC_00_DT50_trees.root
+CNTJob FTREES S /Users/jjgomezcadenas/Development/PETALO/WORK/tree/test_refl97_VUV3mm_z5cm_QE_1.0_SPTR_0_ASIC_0_DT300_noScint_trees.root
 
 #------ SAVE EVENTS IN OUTPUT FILE ----------# 
 CNTJob SAVE I 0
@@ -72,8 +72,8 @@ CRT Debug I 0
 
 CRT NSIPM I 128
 CRT NPE I 10
-CRT QE D 0.25
-CRT DTMAX D 50
+CRT QE D 1.0
+CRT DTMAX D 300
 CRT SPTR D 0
 CRT ASIC D 0
 

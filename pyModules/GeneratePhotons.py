@@ -1,5 +1,6 @@
 import random as rnd
 from LXe import *
+from LYSO import *
 from Geometry import *
 from Util import *
 from Centella.histoManager import *
@@ -8,6 +9,7 @@ from Centella.messenger import *
 from system_of_units import *
 from NumpyAlgebra import *
 import array 
+import sys
 
 
 """
@@ -63,7 +65,7 @@ STEP = 0.1*mm
 PHIMAX = pi/4.
 
 class PhotonGenerator:
-	def __init__(self,box1,box2,boxf1,boxf2,level=0, debug=0):
+	def __init__(self,box1,box2,boxf1,boxf2, det='LXE',level=0, debug=0):
 		"""
 		box1, box2: instances of boxes
 		level = debug level
@@ -81,7 +83,7 @@ class PhotonGenerator:
 		self.ymax = self.box1.ymax #assume that box1 defines fiducial
 		self.dy = self.box1.y/2.
 		self.dz = abs(self.box1.zmin)
-
+		self.det = det
 		self.debug = debug
 
 		# distance in z from the interaction point to box1 or box2
@@ -102,15 +104,26 @@ class PhotonGenerator:
 
 		self.m.log(1, "x = %7.2f y = %7.2f z = %7.2f phimax = %7.2f thmax = %7.2f"%(
 			x,y,z,self.phimax,self.thmax))
+		
 
-		self.lxe = LXe() #lxe properties
-		self.m.log(1, "LXe ---", self.lxe)
+		if det == 'LXE':
+			self.lxe = LXe() #lxe properties
+			self.m.log(1, "LXE ---", self.det)
+			xPE = self.lxe.PhotoelectricCrossSection(EPHOT)
+			xTot = self.lxe.TotalCrossSection(EPHOT)
+			self.ProbPE = xPE/xTot
+		elif det == 'LYSO':
+			self.lyso = LYSO() #lyso properties
+			self.m.log(1, "LYSO ---", self.lyso)
+			self.ProbPE = self.lyso.PhotoelectricFraction()
+		else:
+			print "Not yet implemented"
+			sys.exit()
 
-		xPE = self.lxe.PhotoelectricCrossSection(EPHOT)
-		xTot = self.lxe.TotalCrossSection(EPHOT)
-		self.ProbPE = xPE/xTot
-
-		self.ProbStep = self.lxe.Efficiency(EPHOT,STEP)*self.ProbPE
+		if det == 'LXE':
+			self.ProbStep = self.lxe.Efficiency(EPHOT,STEP)*self.ProbPE
+		elif det == 'LYSO':
+			self.ProbStep =self.lyso.Efficiency(STEP)*self.ProbPE
 
 		self.m.log(1, "Photoelectric probability for 511 keV = %7.2f"%(
 			self.ProbPE))
@@ -180,12 +193,21 @@ class PhotonGenerator:
 		path2 = pathInBox((x2,y2,z2),(P2[0],P2[1],P2[2]),
 			self.box2)
 				
-
-		self.m.log(3,'Prob of int for g1 (511 keV), path =%7.2f mm) = %7.2f'%(
+		if self.det == 'LXE':
+			self.m.log(3,'Prob of int for g1 (511 keV), path =%7.2f mm) = %7.2f'%(
 				path1/mm,self.lxe.Efficiency(EPHOT,path1)*self.ProbPE))
 
-		self.m.log(3,'Prob of int for g2 (511 keV), path =%7.2f mm) = %7.2f'%(
+			self.m.log(3,'Prob of int for g2 (511 keV), path =%7.2f mm) = %7.2f'%(
 				path2/mm,self.lxe.Efficiency(EPHOT,path2)*self.ProbPE))
+		elif self.det == 'LYSO':
+			self.m.log(3,'Prob of int for g1 (511 keV), path =%7.2f mm) = %7.2f'%(
+				path1/mm,self.lyso.Efficiency(path1)*self.ProbPE))
+
+			self.m.log(3,'Prob of int for g2 (511 keV), path =%7.2f mm) = %7.2f'%(
+				path2/mm,self.lyso.Efficiency(path2)*self.ProbPE))
+		else:
+			print "not yet implemented"
+			sys.exit()
 
 		
 		#loop until photons interact
@@ -458,7 +480,7 @@ if __name__ == '__main__':
 	tman.addBranch('tpg','pt2',pt2,dim=1)
 	
 		
-	pg = PhotonGenerator(box1,box2,boxf1,boxf2,level=lvl, debug=Debug)
+	pg = PhotonGenerator(box1,box2,boxf1,boxf2,det='LYSO',level=lvl, debug=Debug)
 	print pg
 
 	nfail = 0

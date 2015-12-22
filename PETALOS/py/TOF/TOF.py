@@ -23,8 +23,18 @@ def sortSiPmHits(hit):
 	return sipm.W[0]
 
 ###########################################################
+def SmearTime(time,SPTR,ctrASIC):
+	"""
+	Smears time to take into account the effect of SiPM and ASIC
+	"""
+	stime = time + rnd.gauss(0, SPTR)
+	stime+= rnd.gauss(0, ctrASIC)
+	return stime 
+
+
+###########################################################
 class SiPMHit(object):
-	def __init__(self,hid,x,y,z,A,time,qE,dT):
+	def __init__(self,hid,x,y,z,A,time,qE,sptr,ctrASIC,dT):
 		"""
 		Describes a hit in a given SiPM
 		id: id of SiPM
@@ -36,6 +46,8 @@ class SiPMHit(object):
 		   which are closer than DT to the first pe. 
 		Q: the total charge in pes (after taking into account QE)
 		qE is the quantum efficiency of the SiPM
+		sptr is the single photon timr resolution of the SiPM, tipically 80 ps (rms)
+		ctrASIC is the contribution ctr from the ASIC, tipically 30 ps (rms)
 		dT is the time window (wrt first pes) to store pes in waveform 
 		"""
 		self.id = hid
@@ -45,6 +57,8 @@ class SiPMHit(object):
 		self.Q = 0.
 		self.dT = dT
 		self.qE = qE
+		self.sptr = sptr
+		self.ctrASIC = ctrASIC
 
 	def ID(self):
 		return self.id
@@ -54,6 +68,12 @@ class SiPMHit(object):
 
 	def DT(self):
 		return self.dT
+
+	def SPTR(self):
+		return self.sptr
+
+	def CtrASIC(self):
+		return self.ctrASIC
 
 	def TimeFirstUVPhoton(self):
 		return self.hit.T()
@@ -90,7 +110,8 @@ class SiPMHit(object):
 				)
 		s+="Waveform (ns)= %s"%(self.W)
 		return s
-	
+
+		
 
 ###########################################################
 class TimeMap(object):
@@ -217,13 +238,6 @@ class TimeMap(object):
 
 	def NumberOfSiPmHitsDT(self,box=1):
 		return len(self.siPmMapDTList[box-1])
-		
-		# if jitter > 0:
-
-		# 	time += rnd.gauss(0, jitter)
-
-		#print "boxNumber =%d"%(boxNumber)
-		#print "x,y,z,A,time",x,y,z,A,time
 
 	def setDTMaps(self,dt):
 		"""

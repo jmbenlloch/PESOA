@@ -38,15 +38,15 @@ CNTJob WRITER S gateWriter
 
 #------------- log file -------------#
 CNTJob LOG I 0
-CNTJob FLOG S /Users/jjgomezcadenas/Development/PETALO/WORK/log/ tof_electrons_refl97_VUV6mm_xy5cm_z5cm_QE_0.25_SPTR_00_ASIC_00_DT50.log
+CNTJob FLOG S /Users/jjgomezcadenas/Development/PETALO/WORK/log/ tof_electrons_refl97_VUV6mm_xy5cm_z5cm_QE_0.15_SPTR_00_ASIC_00_DT50.log
 
 #---------- histogram file ----------#
 CNTJob HISTOS 1
-CNTJob FHISTOS S /Users/jjgomezcadenas/Development/PETALO/WORK/histo/tof_electrons_refl97_VUV6mm_xy5cm_z5cm_QE_0.25_SPTR_00_ASIC_00_DT50_histos.root
+CNTJob FHISTOS S /Users/jjgomezcadenas/Development/PETALO/WORK/histo/tof_electrons_refl97_VUV6mm_xy5cm_z5cm_QE_0.15_SPTR_00_ASIC_00_DT50_histos.root
 
 #---------- histogram file ----------#
 CNTJob TREES 1
-CNTJob FTREES S /Users/jjgomezcadenas/Development/PETALO/WORK/tree/tof_electrons_refl97_VUV6mm_xy5cm_z5cm_QE_0.25_SPTR_00_ASIC_00_DT50_trees.root
+CNTJob FTREES S /Users/jjgomezcadenas/Development/PETALO/WORK/tree/tof_electrons_refl97_VUV6mm_xy5cm_z5cm_QE_0.15_SPTR_00_ASIC_00_DT50_trees.root
 
 #------ SAVE EVENTS IN OUTPUT FILE ----------# 
 CNTJob SAVE I 0
@@ -71,8 +71,8 @@ CRT Debug I 0
 
 CRT NSIPM I 128
 CRT NPE I 10
-CRT QE D 0.25
-CRT DTMAX D 50
+CRT QE D 0.15
+CRT DTMAX D 100
 CRT SPTR D 0
 CRT ASIC D 0
 
