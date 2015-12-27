@@ -46,8 +46,7 @@ class AFiducial(AAlgo):
 		self.fbox1 = Box(fboxCoord1)
 		self.fbox2 = Box(fboxCoord2)
 
-		self.gparam["box"]=[self.box1,self.box2]
-		self.gparam["fbox"]=[self.fbox1,self.fbox2]
+		self.HBOX = self.ints["HBOX"] # if 0 no histos, if 1 only box 1 if 2 also box2
 		
 		self.m.log(1, "Box1 --", self.box1)
 		self.m.log(1, "Box2 ---", self.box2)
@@ -140,17 +139,18 @@ class AFiducial(AAlgo):
 			if self.fbox1.Active((x,y,z)) == True:
 				self.m.log(2,'gamma found in box1')
 				
-				self.hman.fill(self.XYZBox1_histo_name, 
+				if self.HBOX ==1 :
+					self.hman.fill(self.XYZBox1_histo_name, 
 					x/mm,y/mm,z/mm)
-				self.hman.fill(self.XYBox1_histo_name, 
+					self.hman.fill(self.XYBox1_histo_name, 
 					x/mm,y/mm)
-				self.hman.fill(self.XBox1_histo_name, 
+					self.hman.fill(self.XBox1_histo_name, 
 					x/mm)
-				self.hman.fill(self.YBox1_histo_name, 
+					self.hman.fill(self.YBox1_histo_name, 
 					y/mm)
-				self.hman.fill(self.ZBox1_histo_name, 
+					self.hman.fill(self.ZBox1_histo_name, 
 					z/mm)
-				self.hman.fill(self.TBox1_histo_name, 
+					self.hman.fill(self.TBox1_histo_name, 
 					t/ps)
 
 				vertexBox1.x = x
@@ -163,17 +163,18 @@ class AFiducial(AAlgo):
 			elif self.fbox2.Active((x,y,z)) == True:
 				self.m.log(2,'gamma found in box2')
 				
-				self.hman.fill(self.XYZBox2_histo_name, 
+				if self.HBOX ==2 :
+					self.hman.fill(self.XYZBox2_histo_name, 
 					x/mm,y/mm,z/mm)
-				self.hman.fill(self.XYBox2_histo_name, 
+					self.hman.fill(self.XYBox2_histo_name, 
 					x/mm,y/mm)
-				self.hman.fill(self.ZBox2_histo_name, 
+					self.hman.fill(self.ZBox2_histo_name, 
 					z/mm)
-				self.hman.fill(self.XBox2_histo_name, 
+					self.hman.fill(self.XBox2_histo_name, 
 					x/mm)
-				self.hman.fill(self.YBox2_histo_name, 
+					self.hman.fill(self.YBox2_histo_name, 
 					y/mm)
-				self.hman.fill(self.TBox2_histo_name, 
+					self.hman.fill(self.TBox2_histo_name, 
 					t/ps)
 
 				vertexBox2.x = x
@@ -191,8 +192,8 @@ class AFiducial(AAlgo):
 				self.m.log(2, "fBox1 --", self.fbox1)
 				self.m.log(2, "fBox2 ---", self.fbox2)
 		
-		self.gparam["vertexBox"]=[vertexBox1,vertexBox2]
-
+		self.logman["USER"].gparam["vertexBox"]=[vertexBox1,vertexBox2]
+		
 		self.m.log(2,' fid =%7.2f'%(fid))
 		
 		return fid
@@ -226,105 +227,107 @@ class AFiducial(AAlgo):
 			self.Fiducial_histo_name).GetXaxis().SetTitle(
 			"Fiducial interactions")
 
-		XYZBox1_histo_desc = "XYZBox1"
-		self.XYZBox1_histo_name = self.alabel(XYZBox1_histo_desc)
-		self.hman.h3(self.XYZBox1_histo_name, XYZBox1_histo_desc, 
-			10, self.box1.xmin, self.box1.xmax,
-           	10, self.box1.ymin, self.box1.ymax,
-           	10, self.box1.zmin, self.box1.zmax)
-		self.hman.fetch(
-			self.XYZBox1_histo_name).GetXaxis().SetTitle(
-			"XYZ interaction box 1 (mm)")
+		if self.HBOX ==1 :
+			XYZBox1_histo_desc = "XYZBox1"
+			self.XYZBox1_histo_name = self.alabel(XYZBox1_histo_desc)
+			self.hman.h3(self.XYZBox1_histo_name, XYZBox1_histo_desc, 
+				10, self.box1.xmin, self.box1.xmax,
+           		10, self.box1.ymin, self.box1.ymax,
+           		10, self.box1.zmin, self.box1.zmax)
+			self.hman.fetch(
+				self.XYZBox1_histo_name).GetXaxis().SetTitle(
+				"XYZ interaction box 1 (mm)")
 
-		XYBox1_histo_desc = "XYBox1"
-		self.XYBox1_histo_name = self.alabel(XYBox1_histo_desc)
-		self.hman.h2(self.XYBox1_histo_name, XYBox1_histo_desc, 
+			XYBox1_histo_desc = "XYBox1"
+			self.XYBox1_histo_name = self.alabel(XYBox1_histo_desc)
+			self.hman.h2(self.XYBox1_histo_name, XYBox1_histo_desc, 
 			25, self.box1.xmin, self.box1.xmax,
            	25, self.box1.ymin, self.box1.ymax)  	
-		self.hman.fetch(
+			self.hman.fetch(
 			self.XYBox1_histo_name).GetXaxis().SetTitle(
 			"XY interaction box 1 (mm)")
 
-		XBox1_histo_desc = "XBox1"
-		self.XBox1_histo_name = self.alabel(XBox1_histo_desc)
-		self.hman.h1(self.XBox1_histo_name, XBox1_histo_desc, 
+			XBox1_histo_desc = "XBox1"
+			self.XBox1_histo_name = self.alabel(XBox1_histo_desc)
+			self.hman.h1(self.XBox1_histo_name, XBox1_histo_desc, 
 			25, self.box1.xmin, self.box1.xmax)
-		self.hman.fetch(
+			self.hman.fetch(
 			self.XBox1_histo_name).GetXaxis().SetTitle(
 			"X interaction box 1 (mm)")
 
-		YBox1_histo_desc = "YBox1"
-		self.YBox1_histo_name = self.alabel(YBox1_histo_desc)
-		self.hman.h1(self.YBox1_histo_name, YBox1_histo_desc, 
+			YBox1_histo_desc = "YBox1"
+			self.YBox1_histo_name = self.alabel(YBox1_histo_desc)
+			self.hman.h1(self.YBox1_histo_name, YBox1_histo_desc, 
 			25,self.box1.ymin, self.box1.ymax)
-		self.hman.fetch(
+			self.hman.fetch(
 			self.YBox1_histo_name).GetXaxis().SetTitle(
 			"Y interaction box 1 (mm)")
 
-		ZBox1_histo_desc = "ZBox1"
-		self.ZBox1_histo_name = self.alabel(ZBox1_histo_desc)
-		self.hman.h1(self.ZBox1_histo_name, ZBox1_histo_desc, 
+			ZBox1_histo_desc = "ZBox1"
+			self.ZBox1_histo_name = self.alabel(ZBox1_histo_desc)
+			self.hman.h1(self.ZBox1_histo_name, ZBox1_histo_desc, 
 			25, self.box1.zmin, self.box1.zmax)
-		self.hman.fetch(
+			self.hman.fetch(
 			self.ZBox1_histo_name).GetXaxis().SetTitle(
 			"Z interaction box 1 (mm)")
 
-		TBox1_histo_desc = "TBox1"
-		self.TBox1_histo_name = self.alabel(TBox1_histo_desc)
-		self.hman.h1(self.TBox1_histo_name, TBox1_histo_desc, 
+			TBox1_histo_desc = "TBox1"
+			self.TBox1_histo_name = self.alabel(TBox1_histo_desc)
+			self.hman.h1(self.TBox1_histo_name, TBox1_histo_desc, 
 			50, 300, 600)
-		self.hman.fetch(
+			self.hman.fetch(
 			self.TBox1_histo_name).GetXaxis().SetTitle(
 			"Time of gamma in  box 1 (ps)")
 		
-		XYZBox2_histo_desc = "XYZBox2"
-		self.XYZBox2_histo_name = self.alabel(XYZBox2_histo_desc)
-		self.hman.h3(self.XYZBox2_histo_name, XYZBox2_histo_desc, 
+		if self.HBOX ==2 :
+			XYZBox2_histo_desc = "XYZBox2"
+			self.XYZBox2_histo_name = self.alabel(XYZBox2_histo_desc)
+			self.hman.h3(self.XYZBox2_histo_name, XYZBox2_histo_desc, 
 			10, self.box2.xmin, self.box2.xmax,
            	10, self.box2.ymin, self.box2.ymax,
            	10, self.box2.zmin, self.box2.zmax)
-		self.hman.fetch(
+			self.hman.fetch(
 			self.XYZBox2_histo_name).GetXaxis().SetTitle(
 			"XYZ interaction box 2 (mm)")
 
-		XYBox2_histo_desc = "XYBox2"
-		self.XYBox2_histo_name = self.alabel(XYBox2_histo_desc)
-		self.hman.h2(self.XYBox2_histo_name, XYBox2_histo_desc, 
+			XYBox2_histo_desc = "XYBox2"
+			self.XYBox2_histo_name = self.alabel(XYBox2_histo_desc)
+			self.hman.h2(self.XYBox2_histo_name, XYBox2_histo_desc, 
 			25, self.box2.xmin, self.box2.xmax,
            	25, self.box2.ymin, self.box2.ymax)
-		self.hman.fetch(
+			self.hman.fetch(
 			self.XYBox2_histo_name).GetXaxis().SetTitle(
 			"XY interaction box 2 (mm)")
 
-		XBox2_histo_desc = "XBox2"
-		self.XBox2_histo_name = self.alabel(XBox2_histo_desc)
-		self.hman.h1(self.XBox2_histo_name, XBox2_histo_desc, 
+			XBox2_histo_desc = "XBox2"
+			self.XBox2_histo_name = self.alabel(XBox2_histo_desc)
+			self.hman.h1(self.XBox2_histo_name, XBox2_histo_desc, 
 			25, self.box2.xmin, self.box2.xmax)
-		self.hman.fetch(
+			self.hman.fetch(
 			self.XBox2_histo_name).GetXaxis().SetTitle(
 			"X interaction box 2 (mm)")
 
-		YBox2_histo_desc = "YBox2"
-		self.YBox2_histo_name = self.alabel(YBox2_histo_desc)
-		self.hman.h1(self.YBox2_histo_name, YBox2_histo_desc, 
+			YBox2_histo_desc = "YBox2"
+			self.YBox2_histo_name = self.alabel(YBox2_histo_desc)
+			self.hman.h1(self.YBox2_histo_name, YBox2_histo_desc, 
 			25,self.box2.ymin, self.box2.ymax)
-		self.hman.fetch(
+			self.hman.fetch(
 			self.YBox2_histo_name).GetXaxis().SetTitle(
 			"Y interaction box 2 (mm)")
 
-		ZBox2_histo_desc = "ZBox2"
-		self.ZBox2_histo_name = self.alabel(ZBox2_histo_desc)
-		self.hman.h1(self.ZBox2_histo_name, ZBox2_histo_desc, 
+			ZBox2_histo_desc = "ZBox2"
+			self.ZBox2_histo_name = self.alabel(ZBox2_histo_desc)
+			self.hman.h1(self.ZBox2_histo_name, ZBox2_histo_desc, 
 			25, self.box1.zmin, self.box1.zmax)
-		self.hman.fetch(
+			self.hman.fetch(
 			self.ZBox2_histo_name).GetXaxis().SetTitle(
 			"Z interaction box 2 (mm)")
 
-		TBox2_histo_desc = "TBox2"
-		self.TBox2_histo_name = self.alabel(TBox2_histo_desc)
-		self.hman.h1(self.TBox2_histo_name, TBox2_histo_desc, 
+			TBox2_histo_desc = "TBox2"
+			self.TBox2_histo_name = self.alabel(TBox2_histo_desc)
+			self.hman.h1(self.TBox2_histo_name, TBox2_histo_desc, 
 			50, 300, 600)
-		self.hman.fetch(
+			self.hman.fetch(
 			self.TBox2_histo_name).GetXaxis().SetTitle(
 			"Time of gamma in  box 2 (ps)")
 

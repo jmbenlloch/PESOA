@@ -62,15 +62,36 @@ CNTJob NDEBUG I 100
 
 
 #--------- ALGORITHMS -------#
-CNTJob ALGOS SV 1
+CNTJob ALGOS SV 2
 AFiducial
-
+ATimeMap
 
 
 #--------- Algo PARAMS -------#
+ATimeMap Debug I 0
+ATimeMap SCINTILLATOR S LYSO
+ATimeMap NSIPM I 10
+ATimeMap QE D 1.0
+ATimeMap DTMAX D 300
+ATimeMap SPTR D 0
+ATimeMap ASIC D 00
+ATimeMap INTER S CHER
+ATimeMap HBOX I 1
+
+ATimeMap Box1Id IV 4
+0
+63
+2000
+2063
+ATimeMap Box2Id IV 4
+10000
+10063
+12000
+12063
+
 AFiducial VLEVEL I 3
 AFiducial Debug I 0
-
+AFiducial HBOX I 1
 
 AFiducial Box1V1 DV 3 
 -12.8 
