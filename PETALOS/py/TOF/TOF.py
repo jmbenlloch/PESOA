@@ -1,8 +1,7 @@
-from Centella.physical_constants import *
+from Util import *
 import random as rnd
 import sys
 from Geometry import *
-ps = picosecond
 
 ############################################################
 def sortHits(hit):

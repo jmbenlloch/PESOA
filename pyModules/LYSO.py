@@ -11,6 +11,20 @@ nm = nanometer
 mol = mole
 micron = micrometer
 
+LysoScintSpectrum =[
+[2.2543, 0.0643],
+[2.4797, 0.1929],
+[2.6436, 0.4],
+[2.8700, 1.],
+[3.0996, 0.4071]
+]
+def sortRI(elem):
+  """
+  A helper function used to sort the hits. The hits are organises like this:
+  (id, [x,y,z,A,t]): the function returns the time as key to sort the hit list
+  """
+  return elem[0]
+
 class LYSO:
     def __init__(self,Z=54,rho=7.3*g/cm3, n=1.82, X0=1.16*cm, LambdaAtt = 0.87*(1./cm),
         LambdaPeak=420*nm, tau = 50*ns, PhotoFraction = 0.3, Nphot = 15000):
@@ -28,6 +42,34 @@ class LYSO:
         self.tau = tau
         self.photoF = PhotoFraction
         self.Nphot = Nphot
+
+        lysct =[]  #transform to nm
+        for elem in LysoScintSpectrum:
+            ene = elem[0]
+            w =elem[1]
+            x =[(1240./ene)*nm,w]
+      #print x[0]/nm
+            lysct.append(x)
+
+        self.LYSC = sorted(lysct, key=sortRI)
+    
+        print "scintillation spectrum"
+        for elem in self.LYSC:
+            print " lambda = %7.2f nm w= %7.2g"%(elem[0]/nm,elem[1])
+
+        l = self.AverageLamda()
+        
+    
+    def AverageLamda(self):
+        """
+        Returns the average lamda 
+        """
+        l=0.
+        w=0.
+        for elem in self.LYSC:
+            l+=elem[0]*elem[1]
+            w+=elem[1]
+        return (l/w)
 
     def EffectiveAtomicNumber(self):
         """
@@ -114,6 +156,8 @@ if __name__ == '__main__':
     lyso = LYSO()
 
     print lyso  
+
+    print "Average Lamda = %7.2f"%(lyso.AverageLamda()/nm)
 
     for z in drange(1., 11., 1.):
       print """

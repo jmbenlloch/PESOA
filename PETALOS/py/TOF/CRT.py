@@ -41,6 +41,8 @@ class CRT(AAlgo):
   		fboxCoord1 =self.loadCoord("FBox1V")
   		fboxCoord2 =self.loadCoord("FBox2V")
 
+  		self.SCINT = self.strings["SCINTILLATOR"]
+
   		self.QE = self.doubles["QE"]  #quantum efficiency
   		self.DTMAX = self.doubles["DTMAX"]*ps  #max diff wrt first pes
   		self.SPTR = self.doubles["SPTR"]*ps  #single photon time resolution
@@ -67,11 +69,19 @@ class CRT(AAlgo):
 		self.m.log(1, "Fiducial Box2 ---", self.box2)
 		self.m.log(1, "IDs Box1 --", self.box1ID)
 		self.m.log(1, "IDs Box2 --", self.box2ID)
+		self.m.log(1, "MATERIAL --", self.MATERIAL)
 
 		self.m.log(1, "QE = %7.2f Time Jitter =%7.2f ps  --"%(self.QE, self.TJ/ps))
 
-		self.lxe = LXe() #lxe properties
-		print self.lxe
+		if self.SCINT == "LXE"
+			self.scint = LXe() #lxe properties
+		elif self.SCINT == "LYSO"
+			self.scint = LYSO()
+		else:
+			print "scintillator not yet implemented"
+			sys.exit()
+
+		print self.scint
 
 		
 		if self.debug == 1:
@@ -214,11 +224,12 @@ class CRT(AAlgo):
 
 			x0,y0,z0 = particleInitialVtx(pparticle)
 			x,y,z = particleFinalVtx(pparticle)
+			t = particleTime(pparticle)
 			
-			self.m.log(2, ' x0 =%7.2f mm, y0 =%7.2f mm, z0 =%7.2f mm '%(
-			x0/mm,y0/mm,z0/mm))
-			self.m.log(2, ' xf =%7.2f mm, yf =%7.2f mm, zf =%7.2f mm '%(
-			x/mm,y/mm,z/mm))
+			self.m.log(2, ' x0 =%7.2f mm, y0 =%7.2f mm, z0 =%7.2f mm, t = %7.2f ps '%(
+			x0/mm,y0/mm,z0/mm, t/ps))
+			self.m.log(2, ' xf =%7.2f mm, yf =%7.2f mm, zf =%7.2f mm, t = %7.2f ps '%(
+			x/mm,y/mm,z/mm, t/ps))
 
 			if self.fbox1.Active((x,y,z)) == True:
 				self.m.log(2,'gamma found in box1')
@@ -227,18 +238,24 @@ class CRT(AAlgo):
 					x/mm,y/mm,z/mm)
 				self.hman.fill(self.XYBox1_histo_name, 
 					x/mm,y/mm)
+				self.hman.fill(self.XBox1_histo_name, 
+					x/mm)
+				self.hman.fill(self.YBox1_histo_name, 
+					y/mm)
 				self.hman.fill(self.ZBox1_histo_name, 
 					z/mm)
+				self.hman.fill(self.TBox1_histo_name, 
+					t/ns)
 
 				vertexBox1.x = x
 				vertexBox1.y = y
 				vertexBox1.z = z
-				vertexBox1.t = particleTime(pparticle)
+				vertexBox1.t = t
 
 				self.xb1[0]=x/mm
 				self.yb1[0]=y/mm
 				self.zb1[0]=z/mm
-				self.tpb1[0]=vertexBox1.t/ps
+				self.tpb1[0]=t/ps
 
 				fid+=1
 			
@@ -251,16 +268,22 @@ class CRT(AAlgo):
 					x/mm,y/mm)
 				self.hman.fill(self.ZBox2_histo_name, 
 					z/mm)
+				self.hman.fill(self.XBox2_histo_name, 
+					x/mm)
+				self.hman.fill(self.YBox2_histo_name, 
+					y/mm)
+				self.hman.fill(self.TBox2_histo_name, 
+					t/ns)
 
 				vertexBox2.x = x
 				vertexBox2.y = y
 				vertexBox2.z = z
-				vertexBox2.t = particleTime(pparticle)
+				vertexBox2.t = t
 
 				self.xb2[0]=x/mm
 				self.yb2[0]=y/mm
 				self.zb2[0]=z/mm
-				self.tpb2[0]=vertexBox2.t/ps
+				self.tpb2[0]=t/ps
 
 				fid+=1
 			else:
@@ -457,9 +480,9 @@ class CRT(AAlgo):
 		dtg = vertexBox2.t - vertexBox1.t
 		
 		dbox1 = distance(siPMHit1.XYZ(),vertexBox1.XYZ())
-		tpath1 = dbox1*self.lxe.RefractionIndexUV()/c_light
+		tpath1 = dbox1*self.scint.RefractionIndex()/c_light
 		dbox2 = distance(siPMHit2.XYZ(),vertexBox2.XYZ())
-		tpath2 = dbox2*self.lxe.RefractionIndexUV()/c_light
+		tpath2 = dbox2*self.scint.RefractionIndex()/c_light
 
 		dpg = tpath2 - tpath1
 
@@ -474,11 +497,21 @@ class CRT(AAlgo):
 		
 		
 		self.m.log(2,
+			"Box1: t1stPE =%7.2f ps, tgamma= %7.2f ps, tpath =%7.2f ps, dt1stPE =%7.2f ps "%(
+				siPMHit1.TimeFirstPE()/ps,vertexBox1.t/ps,tpath1/ps, 
+				(siPMHit1.TimeFirstPE()-vertexBox1.t-tpath1)/ps))
+		self.m.log(2,
+			"Box2: t1stPE =%7.2f ps, tgamma= %7.2f ps, tpath =%7.2f ps, dt1stPE =%7.2f ps "%(
+				siPMHit2.TimeFirstPE()/ps,vertexBox2.t/ps,tpath2/ps,
+				(siPMHit2.TimeFirstPE()-vertexBox2.t-tpath2)/ps))
+		
+		self.m.log(2,
 			"dt =%7.2f ps, dtg= %7.2f ps, dpg =%7.2f ps, dtof= %7.2f ps,  "%(
 				dt/ps,dtg/ps,dpg/ps,dtof/ps))
 		
 
-
+		if self.debug == 1:
+			wait()
 
 ###########################################################
 	def ComputeDT(self):
@@ -677,9 +710,9 @@ class CRT(AAlgo):
 
 
 		dbox1 = distance(vhit1,vertex1)
-		tpath1 = dbox1*self.lxe.RefractionIndexUV()/c_light
+		tpath1 = dbox1*self.scint.RefractionIndex()/c_light
 		dbox2 = distance(vhit2,vertex2)
-		tpath2 = dbox2*self.lxe.RefractionIndexUV()/c_light
+		tpath2 = dbox2*self.scint.RefractionIndex()/c_light
 		DT2 = tpath1 - tpath2
 
 		self.hman.fill(self.TBox1_histo_name,tpath1/ps)
@@ -928,6 +961,22 @@ class CRT(AAlgo):
 			self.XYBox1_histo_name).GetXaxis().SetTitle(
 			"XY interaction box 1 (mm)")
 
+		XBox1_histo_desc = "XBox1"
+		self.XBox1_histo_name = self.alabel(XBox1_histo_desc)
+		self.hman.h1(self.XBox1_histo_name, XBox1_histo_desc, 
+			25, self.box1.xmin, self.box1.xmax)
+		self.hman.fetch(
+			self.XBox1_histo_name).GetXaxis().SetTitle(
+			"X interaction box 1 (mm)")
+
+		YBox1_histo_desc = "YBox1"
+		self.YBox1_histo_name = self.alabel(YBox1_histo_desc)
+		self.hman.h1(self.YBox1_histo_name, YBox1_histo_desc, 
+			25,self.box1.ymin, self.box1.ymax)
+		self.hman.fetch(
+			self.YBox1_histo_name).GetXaxis().SetTitle(
+			"Y interaction box 1 (mm)")
+
 		ZBox1_histo_desc = "ZBox1"
 		self.ZBox1_histo_name = self.alabel(ZBox1_histo_desc)
 		self.hman.h1(self.ZBox1_histo_name, ZBox1_histo_desc, 
@@ -936,6 +985,13 @@ class CRT(AAlgo):
 			self.ZBox1_histo_name).GetXaxis().SetTitle(
 			"Z interaction box 1 (mm)")
 
+		TBox1_histo_desc = "TGammaBox1"
+		self.TBox1_histo_name = self.alabel(TBox1_histo_desc)
+		self.hman.h1(self.TBox1_histo_name, TBox1_histo_desc, 
+			50, 300, 600)
+		self.hman.fetch(
+			self.TBox1_histo_name).GetXaxis().SetTitle(
+			"Time of gamma in  box 1 (ns)")
 		
 		XYZBox2_histo_desc = "XYZBox2"
 		self.XYZBox2_histo_name = self.alabel(XYZBox2_histo_desc)
@@ -952,10 +1008,25 @@ class CRT(AAlgo):
 		self.hman.h2(self.XYBox2_histo_name, XYBox2_histo_desc, 
 			25, self.box2.xmin, self.box2.xmax,
            	25, self.box2.ymin, self.box2.ymax)
-           	
 		self.hman.fetch(
 			self.XYBox2_histo_name).GetXaxis().SetTitle(
 			"XY interaction box 2 (mm)")
+
+		XBox2_histo_desc = "XBox2"
+		self.XBox2_histo_name = self.alabel(XBox2_histo_desc)
+		self.hman.h1(self.XBox2_histo_name, XBox2_histo_desc, 
+			25, self.box2.xmin, self.box2.xmax)
+		self.hman.fetch(
+			self.XBox2_histo_name).GetXaxis().SetTitle(
+			"X interaction box 2 (mm)")
+
+		YBox2_histo_desc = "YBox2"
+		self.YBox2_histo_name = self.alabel(YBox2_histo_desc)
+		self.hman.h1(self.YBox2_histo_name, YBox2_histo_desc, 
+			25,self.box2.ymin, self.box2.ymax)
+		self.hman.fetch(
+			self.YBox2_histo_name).GetXaxis().SetTitle(
+			"Y interaction box 2 (mm)")
 
 		ZBox2_histo_desc = "ZBox2"
 		self.ZBox2_histo_name = self.alabel(ZBox2_histo_desc)
@@ -964,6 +1035,14 @@ class CRT(AAlgo):
 		self.hman.fetch(
 			self.ZBox2_histo_name).GetXaxis().SetTitle(
 			"Z interaction box 2 (mm)")
+
+		TBox2_histo_desc = "TGammaBox2"
+		self.TBox2_histo_name = self.alabel(TBox2_histo_desc)
+		self.hman.h1(self.TBox2_histo_name, TBox2_histo_desc, 
+			50, 300, 600)
+		self.hman.fetch(
+			self.TBox2_histo_name).GetXaxis().SetTitle(
+			"Time of gamma in  box 2 (ns)")
 
 		TimeFirstPE_histo_desc = "TimeFirstPE"
 		self.TimeFirstPE_histo_name = self.alabel(TimeFirstPE_histo_desc)

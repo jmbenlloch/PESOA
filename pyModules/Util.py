@@ -3,6 +3,11 @@ Utilities
 """
 from math import *
 import sys
+from Centella.physical_constants import *
+ps = picosecond
+nm = nanometer 
+mol = mole
+micron = micrometer
 
 def wait():
 	raw_input("Press a key...")

@@ -77,6 +77,32 @@ class LXe:
     return (l/w,n/w)
 
 
+  def RmsRI(self):
+    """
+    Returns the rms of the refraction index
+    """
+    
+    ns=0.
+    w=0.
+    lw, nw = self.AverageLamdaAndRI()
+
+    print "nw = %7.2f"%(nw)
+    for elem in self.LXRI:
+
+      ns+=elem[2]*(elem[1] - nw)**2
+      w+=elem[2]
+    
+      print " ni = %7.4g, ni - nw = %7.4g, wi =%7.4g ns = %7.4g"%(
+        elem[1],elem[1] - nw,elem[2],ns)
+
+    N=len(self.LXRI)
+    a = N*ns
+    b = (N-1)*w
+    sw = sqrt(a/b)
+
+    print " N = %7.2f, ns = %7.2f, w = %7.2f, a = %7.2f b = %7.2f"%(
+        N,ns,w,a,b)
+    return sw
 
   def RefractionIndex(self,lamda):
     """
@@ -299,7 +325,19 @@ if __name__ == '__main__':
     print """
     Average lamda = %7.2f nm ; average n = %7.2f
     """%(l/nm, n)
+
+    rmsri = lxe.RmsRI()
+    print """
+    Weighted rms of n = %7.2f 
+    """%(rmsri)
+
+    print """
+    Dn/n = %7.2f 
+    """%(rmsri/n)
+
     print "Efficiency for 511 keV photons" 
+
+    
 
     for z in drange(1., 11., 1.):
       print """
