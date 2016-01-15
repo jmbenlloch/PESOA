@@ -19,7 +19,7 @@
 ###############################################
 
 #--------- PATHS with modules to be used -------#
-CNTJob PATHS SV 3
+CNTJob PATHS SV 1
 /Users/jjgomezcadenas/Development/PETALO/PESOA/PETALOS/py/TOF
 
 ############################ VERBOSITY LEVEL ##########################
@@ -28,7 +28,7 @@ CNTJob LEVEL I 1
 
 #--------- DATA -------#
 CNTJob INPUT_DATA SV 1
-/Users/jjgomezcadenas/Development/PETALO/DATA/lyso_refl97_VUV3mm_xy2.4cm_z5cm_noScint.0.pet
+/Users/jjgomezcadenas/Development/PETALO/DATA/lXe_refl97_VUV3mm_xy2.4cm_z5cm_n1.7.0.pet
 
 #--------- DATA READER -------#
 CNTJob READER S gateReader
@@ -38,15 +38,15 @@ CNTJob WRITER S gateWriter
 
 #------------- log file -------------#
 CNTJob LOG I 0
-CNTJob FLOG S /Users/jjgomezcadenas/Development/PETALO/WORK/log/lyso_refl97_xy2.4cm_z5cm_QE_1_SPTR_0_ASIC_0_DT300_noScint.log
+CNTJob FLOG S /Users/jjgomezcadenas/Development/PETALO/WORK/log/lXe_refl97_VUV3mm_xy2.4cm_z5cm_n1.7_QE_1_SPTR_0_ASIC_0_DT300.log
 
 #---------- histogram file ----------#
 CNTJob HISTOS 1
-CNTJob FHISTOS S /Users/jjgomezcadenas/Development/PETALO/WORK/histo/lyso_refl97_xy2.4cm_z5cm_QE_1_SPTR_0_ASIC_0_DT300__noScint_histos.root
+CNTJob FHISTOS S /Users/jjgomezcadenas/Development/PETALO/WORK/histo/lXe_refl97_VUV3mm_xy2.4cm_z5cm_n1.7_QE_1_SPTR_0_ASIC_0_DT300_histos.root
 
 #---------- histogram file ----------#
 CNTJob TREES 1
-CNTJob FTREES S /Users/jjgomezcadenas/Development/PETALO/WORK/tree/lyso_refl97_xy2.4cm_z5cm_QE_1_SPTR_0_ASIC_0_DT300__noScint_trees.root
+CNTJob FTREES S /Users/jjgomezcadenas/Development/PETALO/WORK/tree/lXe_refl97_VUV3mm_xy2.4cm_z5cm_n1.7_QE_1_SPTR_0_ASIC_0_DT300.root
 
 #------ SAVE EVENTS IN OUTPUT FILE ----------# 
 CNTJob SAVE I 0
@@ -62,20 +62,26 @@ CNTJob NDEBUG I 100
 
 
 #--------- ALGORITHMS -------#
-CNTJob ALGOS SV 2
+CNTJob ALGOS SV 3
 AFiducial
 ATimeMap
+DTOF
 
 
 #--------- Algo PARAMS -------#
+DTOF Debug I 0
+DTOF SCINTILLATOR S LXE
+DTOF VLEVEL I 3
+
 ATimeMap Debug I 0
-ATimeMap SCINTILLATOR S LYSO
-ATimeMap NSIPM I 10
+ATimeMap VLEVEL I 1
+ATimeMap SCINTILLATOR S LXE
+ATimeMap NSIPM I 5
 ATimeMap QE D 1.0
 ATimeMap DTMAX D 300
 ATimeMap SPTR D 0
 ATimeMap ASIC D 00
-ATimeMap INTER S CHER
+ATimeMap INTER S SCINT
 ATimeMap HBOX I 1
 
 ATimeMap Box1Id IV 4
@@ -89,7 +95,7 @@ ATimeMap Box2Id IV 4
 12000
 12063
 
-AFiducial VLEVEL I 3
+AFiducial VLEVEL I 1
 AFiducial Debug I 0
 AFiducial HBOX I 1
 

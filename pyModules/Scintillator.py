@@ -183,6 +183,7 @@ class LXe(Scintillator):
     self.AverageLamda = l
     self.AverageRefractionIndexUV = n
 
+
   def Name(self):
     """
     Interface: Name
@@ -482,7 +483,8 @@ class LXe(Scintillator):
           self.Density()/(g/cm3),
           self.X0()/(g/cm2),(self.X0()/self.Density())/cm,
           self.dEdX()/(keV/cm),self.Ws()/eV, self.Wi()/eV,
-          self.Rayleigh()/cm, self.ScintillationWavelength()/nm, self.nUV, self.nBlue,
+          self.Rayleigh()/cm, self.ScintillationWavelength()/nm, self.RefractionIndex(), 
+          self.nBlue,
           self.tau1/ns, self.rtau1,self.tau2/ns,self.rtau2,
           self.tau3/ns, self.rtau3)
 

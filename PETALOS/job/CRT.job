@@ -28,7 +28,7 @@ CNTJob LEVEL I 1
 
 #--------- DATA -------#
 CNTJob INPUT_DATA SV 1
-/Users/jjgomezcadenas/Development/PETALO/DATA/lyso_refl97_VUV3mm_xy2.4cm_z5cm_noScint.0.pet
+/Users/jjgomezcadenas/Development/PETALO/DATA/lXe_refl97_VUV3mm_xy2.4cm_z5cm_n1.7.0.pet
 
 #--------- DATA READER -------#
 CNTJob READER S gateReader
@@ -38,15 +38,15 @@ CNTJob WRITER S gateWriter
 
 #------------- log file -------------#
 CNTJob LOG I 0
-CNTJob FLOG S /Users/jjgomezcadenas/Development/PETALO/WORK/log/lyso_refl97_xy2.4cm_z5cm_QE_1_SPTR_0_ASIC_0_DT300_noScint.log
+CNTJob FLOG S /Users/jjgomezcadenas/Development/PETALO/WORK/log/lXe_refl97_VUV3mm_xy2.4cm_z5cm_n1.7_QE_1_SPTR_0_ASIC_0_DT300.log
 
 #---------- histogram file ----------#
 CNTJob HISTOS 1
-CNTJob FHISTOS S /Users/jjgomezcadenas/Development/PETALO/WORK/histo/lyso_refl97_xy2.4cm_z5cm_QE_1_SPTR_0_ASIC_0_DT300__noScint_histos.root
+CNTJob FHISTOS S /Users/jjgomezcadenas/Development/PETALO/WORK/histo/lXe_refl97_VUV3mm_xy2.4cm_z5cm_n1.7_QE_1_SPTR_0_ASIC_0_DT300_histos.root
 
 #---------- histogram file ----------#
 CNTJob TREES 1
-CNTJob FTREES S /Users/jjgomezcadenas/Development/PETALO/WORK/tree/lyso_refl97_xy2.4cm_z5cm_QE_1_SPTR_0_ASIC_0_DT300__noScint_trees.root
+CNTJob FTREES S /Users/jjgomezcadenas/Development/PETALO/WORK/tree/lXe_refl97_VUV3mm_xy2.4cm_z5cm_n1.7_QE_1_SPTR_0_ASIC_0_DT300.root
 
 #------ SAVE EVENTS IN OUTPUT FILE ----------# 
 CNTJob SAVE I 0
@@ -67,10 +67,10 @@ CRT
 
 
 #--------- Algo PARAMS -------#
-CRT VLEVEL I 1
-CRT Debug I 0
+CRT VLEVEL I 4
+CRT Debug I 1
 
-CRT SCINTILLATOR S LYSO
+CRT SCINTILLATOR S LXE
 CRT NSIPM I 10
 CRT NPE I 100
 CRT QE D 1.0
