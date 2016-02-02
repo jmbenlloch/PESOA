@@ -333,4 +333,3 @@ class AFiducial(AAlgo):
 
 		
 	
-	

@@ -155,6 +155,10 @@ class ATimeMap(AAlgo):
 
 		ng1 = 0
 		ng2 = 0
+
+#                for w in sensorhits[0].GetWaveform().GetData():
+#                    print "%s \t %s" % (w.first,w.second)
+
 		for hit in sensorhits:
 			hid = hit.GetSensorID()
 			xh = hit.GetPosition().x()

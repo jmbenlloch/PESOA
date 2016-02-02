@@ -4,6 +4,14 @@ import sys
 from Geometry import *
 
 ############################################################
+def sortTimesSipm(hit):
+	"""
+	A helper function used to sort the hits. The hits are organises like this:
+	(time, SipmHit): the function returns the time as key to sort the hit list
+	"""
+	return hit[0]
+
+############################################################
 def sortHits(hit):
 	"""
 	A helper function used to sort the hits. The hits are organises like this:
